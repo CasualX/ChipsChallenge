@@ -1,0 +1,59 @@
+{
+	"hint": "Collect chips to get past the chip socket. Use keys to open doors.",
+	"password": "BDHP",
+	"time": 100,
+	"chips": 11,
+	"width": 17,
+	"height": 16,
+	"map": [
+		"  .............  ",
+		"  .#####.#####.  ",
+		"  .#...###...#.  ",
+		"...#.@.#X#.@.#...",
+		".#####G#=#G#####.",
+		".#.y.B.....R.y.#.",
+		".#.@.#b.i.r#.@.#.",
+		".#####@...@#####.",
+		".#.@.#b...r#.@.#.",
+		".#...R..@..B...#.",
+		".######Y#Y######.",
+		".....#..#..#.....",
+		"    .#.@#@.#.    ",
+		"    .#..#g.#.    ",
+		"    .#######.    ",
+		"    .........    "
+	],
+	"start": [8, 7],
+	"tiles": {
+		" ": {
+			"tile": "Wall",
+			"sprite": "Blank",
+			"model": "Empty",
+			"solid": true
+		},
+		".": {
+			"tile": "Floor",
+			"sprite": "Floor",
+			"model": "Floor",
+			"solid": false
+		},
+		"#": {
+			"tile": "Wall",
+			"sprite": "Wall",
+			"model": "Wall",
+			"solid": true
+		},
+		"X": {
+			"tile": "Exit",
+			"sprite": "Exit1",
+			"model": "Portal",
+			"solid": false
+		},
+		"i": {
+			"tile": "Hint",
+			"sprite": "Hint",
+			"model": "Floor",
+			"solid": false
+		}
+	}
+}

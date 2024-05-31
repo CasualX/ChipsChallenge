@@ -1,0 +1,68 @@
+{
+	"hint": "Push blocks into water to make dirt. Watch out for monsters.",
+	"password": "JXMJ",
+	"time": 100,
+	"chips": 4,
+	"width": 20,
+	"height": 13,
+	"map": [
+		"  .........         ",
+		"  .#######.         ",
+		"  .#..@..#.         ",
+		"  .#.....#..........",
+		"...#..#..##########.",
+		".###..#1..~~.....@#.",
+		".#X=..##1.~~.++.i.#.",
+		".###..#1..~~.....@#.",
+		"...#..#..##########.",
+		"  .#.....#..........",
+		"  .#..@..#.         ",
+		"  .#######.         ",
+		"  .........         "
+	],
+	"start": [15, 6],
+	"tiles": {
+		" ": {
+			"tile": "Wall",
+			"sprite": "Blank",
+			"model": "Empty",
+			"solid": true
+		},
+		".": {
+			"tile": "Floor",
+			"sprite": "Floor",
+			"model": "Floor",
+			"solid": false
+		},
+		"#": {
+			"tile": "Wall",
+			"sprite": "Wall",
+			"model": "Wall",
+			"solid": true
+		},
+		"X": {
+			"tile": "Exit",
+			"sprite": "Exit1",
+			"model": "Portal",
+			"solid": false
+		},
+		"i": {
+			"tile": "Hint",
+			"sprite": "Hint",
+			"model": "Floor",
+			"solid": false
+		},
+		"~": {
+			"tile": "Water",
+			"sprite": "Water",
+			"model": "Floor",
+			"solid": false
+		},
+		"'": {
+			"tile": "Dirt",
+			"sprite": "Dirt",
+			"model": "Floor",
+			"solid": false
+		}
+	}
+}
