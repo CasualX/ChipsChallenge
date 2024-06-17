@@ -10,15 +10,22 @@ mod render;
 mod game;
 mod object;
 mod event;
-mod player;
+mod inventory;
 mod entity;
 mod camera;
+mod entities;
 
 use self::sprites::*;
 use self::object::*;
-use self::player::*;
+use self::inventory::*;
 use self::entity::*;
 use self::camera::*;
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Lifecycle {
+	KeepAlive,
+	Destroy,
+}
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Dir {
@@ -42,6 +49,14 @@ impl Dir {
 			Dir::Left => Dir::Up,
 			Dir::Down => Dir::Left,
 			Dir::Right => Dir::Down,
+		}
+	}
+	pub fn turn_around(self) -> Dir {
+		match self {
+			Dir::Up => Dir::Down,
+			Dir::Left => Dir::Right,
+			Dir::Down => Dir::Up,
+			Dir::Right => Dir::Left,
 		}
 	}
 	pub fn to_vec(self) -> Vec2<i32> {
@@ -115,7 +130,7 @@ impl ThinkContext {
 		for obj in self.entities.map.values() {
 			if obj.pos == pos {
 				let solid = match obj.kind {
-					EntityKind::Barrier => true,
+					EntityKind::Gate => true,
 					EntityKind::Block => true,
 					EntityKind::BlueDoor => true,
 					EntityKind::RedDoor => true,
@@ -244,6 +259,7 @@ pub struct Input {
 	pub down: bool,
 }
 
+#[derive(Debug)]
 pub struct InteractContext {
 	pub remove_entity: bool,
 	pub blocking: bool,
@@ -276,18 +292,19 @@ impl Game {
 			objects: mem::replace(&mut self.objects, Default::default()),
 			entities: mem::replace(&mut self.entities, Default::default()),
 		};
-		self.pl.think(&mut ctx);
+		// self.pl.think(&mut ctx);
 		ctx.pl = self.pl.clone();
 		for handle in ctx.entities.map.keys().cloned().collect::<Vec<_>>() {
 			// ctx.entities.with(handle, |ent| ent.think(&mut ctx));
 			let Some(mut ent) = ctx.entities.remove(handle) else { continue };
-			if ent.think(&mut ctx) {
+			if matches!(ent.think(&mut ctx), Lifecycle::KeepAlive) {
 				ctx.entities.insert(ent);
 			}
 		}
+		self.pl = ctx.pl.clone();
 		for handle in ctx.objects.map.keys().cloned().collect::<Vec<_>>() {
 			let Some(mut obj) = ctx.objects.remove(handle) else { continue };
-			obj.think(&mut ctx);
+			obj.update(&mut ctx);
 			ctx.objects.insert(obj);
 		}
 		self.time += 1;
@@ -315,7 +332,8 @@ impl Game {
 		let view = {
 			//let wiggle_x = 0.0;//((curtime * 2.0).sin() * 32.0) as f32;
 			//let wiggle_y = 0.0;//((curtime * 1.5).sin() * 32.0) as f32;
-			let target = self.pl.cam_pos();
+			let pl_obj = self.objects.get(self.pl.object).unwrap();
+			let target = pl_obj.pos;//pl_ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
 			self.cam.eye = self.cam.eye.exp_decay(target, 15.0, 1.0 / 60.0);
 			self.cam.eye.x = target.x;
 			let eye = self.cam.eye + self.cam.offset;

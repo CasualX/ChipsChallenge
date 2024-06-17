@@ -56,61 +56,61 @@ impl Game {
 					b'\'' => '\'',
 					b'@' => {
 						n.chips += 1;
-						create_chip(self, x, y);
+						entities::chip::create(self, x, y);
 						'.'
 					},
 					b'X' => 'X',
 					b'=' => {
-						create_barrier(self, x, y);
+						entities::gate::create(self, x, y);
 						'.'
 					},
 					b'i' => 'i',
 					b'+' => {
-						create_block(self, x, y);
+						entities::block::create(self, x, y);
 						'.'
 					},
 					b'b' => {
 						n.keys[0] += 1;
-						create_key(self, x, y, KeyColor::Blue);
+						entities::key::create(self, x, y, KeyColor::Blue);
 						'.'
 					},
 					b'r' => {
 						n.keys[1] += 1;
-						create_key(self, x, y, KeyColor::Red);
+						entities::key::create(self, x, y, KeyColor::Red);
 						'.'
 					},
 					b'g' => {
 						n.keys[2] += 1;
-						create_key(self, x, y, KeyColor::Green);
+						entities::key::create(self, x, y, KeyColor::Green);
 						'.'
 					},
 					b'y' => {
 						n.keys[3] += 1;
-						create_key(self, x, y, KeyColor::Yellow);
+						entities::key::create(self, x, y, KeyColor::Yellow);
 						'.'
 					},
 					b'B' => {
 						n.doors[0] += 1;
-						create_door(self, x, y, KeyColor::Blue);
+						entities::door::create(self, x, y, KeyColor::Blue);
 						'.'
 					},
 					b'R' => {
 						n.doors[1] += 1;
-						create_door(self, x, y, KeyColor::Red);
+						entities::door::create(self, x, y, KeyColor::Red);
 						'.'
 					},
 					b'G' => {
 						n.doors[2] += 1;
-						create_door(self, x, y, KeyColor::Green);
+						entities::door::create(self, x, y, KeyColor::Green);
 						'.'
 					},
 					b'Y' => {
 						n.doors[3] += 1;
-						create_door(self, x, y, KeyColor::Yellow);
+						entities::door::create(self, x, y, KeyColor::Yellow);
 						'.'
 					},
 					b'1' => {
-						create_bug(self, x, y);
+						entities::bug::create(self, x, y);
 						'.'
 					},
 					_ => unimplemented!("Unknown tile: {}", chr as char),
@@ -121,215 +121,8 @@ impl Game {
 		}
 		// assert_eq!(n.keys, n.doors);
 		self.field.chips = n.chips;
-		self.pl.pos = Vec2(ld.start[0], ld.start[1]);
-		self.cam.eye = self.pl.pos.map(|c| c as f32).vec3(0.0) * 32.0;
+		self.cam.eye = Vec2(ld.start[0], ld.start[1]).map(|c| c as f32).vec3(0.0) * 32.0;
 		self.cam.offset = Vec3(0.0, 8.0 * 32.0, 400.0);
-		self.entities.insert(Entity {
-			handle: self.pl.entity,
-			kind: EntityKind::Player,
-			pos: self.pl.pos,
-			move_dir: None,
-			face_dir: None,
-			move_time: 0.0,
-		});
-		self.objects.insert(Object {
-			handle: self.pl.object,
-			entity_handle: self.pl.entity,
-			entity_kind: EntityKind::Player,
-			pos: Vec3(ld.start[0] as f32, ld.start[1] as f32, 0.0),
-			vel: Vec3::ZERO,
-			sprite: Sprite::PlayerWalkNeutral,
-			model: Model::Sprite,
-			anim: Animation::None,
-			atime: 0.0,
-			alpha: 1.0,
-			live: true,
-		});
+		entities::player::create(self, ld.start[0], ld.start[1]);
 	}
-}
-
-fn create_chip(game: &mut Game, x: i32, y: i32) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
-		handle: entity_h,
-		kind: EntityKind::Chip,
-		pos: Vec2(x, y),
-		move_dir: None,
-		face_dir: None,
-		move_time: 0.0,
-	});
-	game.objects.insert(Object {
-		handle: object_h,
-		entity_handle: entity_h,
-		entity_kind: EntityKind::Chip,
-		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
-		vel: Vec3::ZERO,
-		sprite: Sprite::Chip,
-		model: Model::Sprite,
-		anim: Animation::None,
-		atime: 0.0,
-		alpha: 1.0,
-		live: true,
-	});
-}
-
-fn create_barrier(game: &mut Game, x: i32, y: i32) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
-		handle: entity_h,
-		kind: EntityKind::Barrier,
-		pos: Vec2(x, y),
-		move_dir: None,
-		face_dir: None,
-		move_time: 0.0,
-	});
-	game.objects.insert(Object {
-		handle: object_h,
-		entity_handle: entity_h,
-		entity_kind: EntityKind::Barrier,
-		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
-		vel: Vec3::ZERO,
-		sprite: Sprite::Barrier,
-		model: Model::Sprite,
-		anim: Animation::None,
-		atime: 0.0,
-		alpha: 1.0,
-		live: true,
-	});
-}
-
-fn create_block(game: &mut Game, x: i32, y: i32) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
-		handle: entity_h,
-		kind: EntityKind::Block,
-		pos: Vec2(x, y),
-		move_dir: None,
-		face_dir: None,
-		move_time: 0.0,
-	});
-	game.objects.insert(Object {
-		handle: object_h,
-		entity_handle: entity_h,
-		entity_kind: EntityKind::Block,
-		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
-		vel: Vec3::ZERO,
-		sprite: Sprite::Block,
-		model: Model::Wall,
-		anim: Animation::None,
-		atime: 0.0,
-		alpha: 1.0,
-		live: true,
-	});
-}
-
-fn create_key(game: &mut Game, x: i32, y: i32, key: KeyColor) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
-		handle: entity_h,
-		kind: match key {
-			KeyColor::Blue => EntityKind::BlueKey,
-			KeyColor::Red => EntityKind::RedKey,
-			KeyColor::Green => EntityKind::GreenKey,
-			KeyColor::Yellow => EntityKind::YellowKey,
-		},
-		pos: Vec2(x, y),
-		move_dir: None,
-		face_dir: None,
-		move_time: 0.0,
-	});
-	game.objects.insert(Object {
-		handle: object_h,
-		entity_handle: entity_h,
-		entity_kind: match key {
-			KeyColor::Blue => EntityKind::BlueKey,
-			KeyColor::Red => EntityKind::RedKey,
-			KeyColor::Green => EntityKind::GreenKey,
-			KeyColor::Yellow => EntityKind::YellowKey,
-		},
-		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
-		vel: Vec3::ZERO,
-		sprite: match key {
-			KeyColor::Blue => Sprite::BlueKey,
-			KeyColor::Red => Sprite::RedKey,
-			KeyColor::Green => Sprite::GreenKey,
-			KeyColor::Yellow => Sprite::YellowKey,
-		},
-		model: Model::Sprite,
-		anim: Animation::None,
-		atime: 0.0,
-		alpha: 1.0,
-		live: true,
-	});
-}
-
-fn create_door(game: &mut Game, x: i32, y: i32, key: KeyColor) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
-		handle: entity_h,
-		kind: match key {
-			KeyColor::Blue => EntityKind::BlueDoor,
-			KeyColor::Red => EntityKind::RedDoor,
-			KeyColor::Green => EntityKind::GreenDoor,
-			KeyColor::Yellow => EntityKind::YellowDoor,
-		},
-		pos: Vec2(x, y),
-		move_dir: None,
-		face_dir: None,
-		move_time: 0.0,
-	});
-	game.objects.insert(Object {
-		handle: object_h,
-		entity_handle: entity_h,
-		entity_kind: match key {
-			KeyColor::Blue => EntityKind::BlueDoor,
-			KeyColor::Red => EntityKind::RedDoor,
-			KeyColor::Green => EntityKind::GreenDoor,
-			KeyColor::Yellow => EntityKind::YellowDoor,
-		},
-		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
-		vel: Vec3::ZERO,
-		sprite: match key {
-			KeyColor::Blue => Sprite::BlueDoor,
-			KeyColor::Red => Sprite::RedDoor,
-			KeyColor::Green => Sprite::GreenDoor,
-			KeyColor::Yellow => Sprite::YellowDoor,
-		},
-		model: Model::Wall,
-		anim: Animation::None,
-		atime: 0.0,
-		alpha: 1.0,
-		live: true,
-	});
-}
-
-fn create_bug(game: &mut Game, x: i32, y: i32) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
-		handle: entity_h,
-		kind: EntityKind::EnemyBug,
-		pos: Vec2(x, y),
-		move_dir: Some(Dir::Up),
-		face_dir: Some(Dir::Up),
-		move_time: 0.0,
-	});
-	game.objects.insert(Object {
-		handle: object_h,
-		entity_handle: entity_h,
-		entity_kind: EntityKind::EnemyBug,
-		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
-		vel: Vec3::ZERO,
-		sprite: Sprite::BugUp,
-		model: Model::FlatSprite,
-		anim: Animation::None,
-		atime: 0.0,
-		alpha: 1.0,
-		live: true,
-	});
 }

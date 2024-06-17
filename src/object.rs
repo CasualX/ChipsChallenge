@@ -20,74 +20,27 @@ pub struct Object {
 }
 
 impl Object {
-	pub fn think(&mut self, ctx: &mut ThinkContext) {
+	pub fn update(&mut self, ctx: &mut ThinkContext) {
 		if !self.live {
 			return;
 		}
 
-		let ent = ctx.entities.get(self.entity_handle);
-
-		match self.entity_kind {
-			EntityKind::Chip => {
-				if ent.is_none() {
-					self.anim = Animation::Rise;
-					self.vel = Vec3(0.0, 0.0, 200.0);
-				}
-			}
-			EntityKind::Block => {
-				if let Some(ent) = ent {
-					self.pos = ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
-					if let Some(move_dir) = ent.move_dir {
-						let t = 1.0 - (ctx.time - ent.move_time) / 0.125;
-						self.pos += (-move_dir.to_vec().map(|c| c as f32 * 32.0) * t).vec3(0.0);
-					}
-				}
-				else {
-					self.live = false;
-				}
-			}
-			EntityKind::Barrier => {
-				if ent.is_none() {
-					self.anim = Animation::Fade;
-					// self.vel = Vec3(0.0, 0.0, 200.0);
-				}
-			}
-			EntityKind::BlueKey | EntityKind::RedKey | EntityKind::GreenKey | EntityKind::YellowKey => {
-				if ent.is_none() {
-					self.anim = Animation::Rise;
-					self.vel = Vec3(0.0, 0.0, 200.0);
-				}
-			}
-			EntityKind::BlueDoor | EntityKind::RedDoor | EntityKind::GreenDoor | EntityKind::YellowDoor => {
-				if ent.is_none() {
-					self.anim = Animation::Fall;
-					self.vel = Vec3(0.0, 0.0, -200.0);
-				}
-			}
-			EntityKind::EnemyBug => {
-				if let Some(ent) = ent {
-					if ent.move_dir.is_none() {
-						self.vel = Vec3::ZERO;
-					}
-					self.sprite = match ent.face_dir {
-						Some(Dir::Up) => Sprite::BugUp,
-						Some(Dir::Left) => Sprite::BugLeft,
-						Some(Dir::Down) => Sprite::BugDown,
-						Some(Dir::Right) => Sprite::BugRight,
-						None => Sprite::BugUp,
-					};
-					self.pos = ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
-					if let Some(move_dir) = ent.move_dir {
-						let t = 1.0 - (ctx.time - ent.move_time) / 0.125;
-						self.pos += (-move_dir.to_vec().map(|c| c as f32 * 32.0) * t).vec3(0.0);
-					}
-				}
-				else {
-					self.live = false;
-				}
-			}
-			_ => (),
-		}
+		let update_fn = match self.entity_kind {
+			EntityKind::Player => entities::player::update,
+			EntityKind::Chip => entities::chip::update,
+			EntityKind::Block => entities::block::update,
+			EntityKind::Gate => entities::gate::update,
+			EntityKind::BlueKey => entities::key::update,
+			EntityKind::RedKey => entities::key::update,
+			EntityKind::GreenKey => entities::key::update,
+			EntityKind::YellowKey => entities::key::update,
+			EntityKind::BlueDoor => entities::door::update,
+			EntityKind::RedDoor => entities::door::update,
+			EntityKind::GreenDoor => entities::door::update,
+			EntityKind::YellowDoor => entities::door::update,
+			EntityKind::EnemyBug => entities::bug::update,
+		};
+		update_fn(self, ctx);
 
 		self.pos += self.vel * ctx.dt;
 
