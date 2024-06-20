@@ -11,58 +11,34 @@
 		"  .#..@..#.         ",
 		"  .#.....#..........",
 		"...#..#..##########.",
-		".###..#1..~~.....@#.",
-		".#X=..##1.~~.++.i.#.",
-		".###..#1..~~.....@#.",
+		".###..#...~~.....@#.",
+		".#X=..##..~~.++.i.#.",
+		".###..#...~~.....@#.",
 		"...#..#..##########.",
 		"  .#.....#..........",
 		"  .#..@..#.         ",
 		"  .#######.         ",
 		"  .........         "
 	],
-	"start": [15, 6],
-	"tiles": {
-		" ": {
-			"tile": "Wall",
-			"sprite": "Blank",
-			"model": "Empty",
-			"solid": true
+	"entities": [
+		{
+			"kind": "Player",
+			"pos": [15, 6]
 		},
-		".": {
-			"tile": "Floor",
-			"sprite": "Floor",
-			"model": "Floor",
-			"solid": false
+		{
+			"kind": "EnemyBug",
+			"face_dir": "Up",
+			"pos": [7, 5]
 		},
-		"#": {
-			"tile": "Wall",
-			"sprite": "Wall",
-			"model": "Wall",
-			"solid": true
+		{
+			"kind": "EnemyBug",
+			"face_dir": "Up",
+			"pos": [8, 6]
 		},
-		"X": {
-			"tile": "Exit",
-			"sprite": "Exit1",
-			"model": "Portal",
-			"solid": false
-		},
-		"i": {
-			"tile": "Hint",
-			"sprite": "Hint",
-			"model": "Floor",
-			"solid": false
-		},
-		"~": {
-			"tile": "Water",
-			"sprite": "Water",
-			"model": "Floor",
-			"solid": false
-		},
-		"'": {
-			"tile": "Dirt",
-			"sprite": "Dirt",
-			"model": "Floor",
-			"solid": false
+		{
+			"kind": "EnemyBug",
+			"face_dir": "Up",
+			"pos": [7, 7]
 		}
-	}
+	]
 }

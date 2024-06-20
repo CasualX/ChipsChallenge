@@ -3,7 +3,7 @@ use std::mem;
 
 use cvmath::*;
 
-mod level;
+mod dto;
 mod sprites;
 mod render;
 
@@ -27,6 +27,21 @@ pub enum Lifecycle {
 	Destroy,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Pickup {
+	Chip,
+	Flippers,
+	FireBoots,
+	IceSkates,
+	SuctionBoots,
+	BlueKey,
+	RedKey,
+	GreenKey,
+	YellowKey,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Dir {
 	Up,
@@ -195,6 +210,14 @@ impl ObjectMap {
 			false
 		}
 	}
+	pub fn find_handle(&self, kind: EntityKind) -> Option<ObjectHandle> {
+		for ent in self.map.values() {
+			if ent.entity_kind == kind {
+				return Some(ent.handle);
+			}
+		}
+		None
+	}
 }
 
 #[derive(Default)]
@@ -235,6 +258,14 @@ impl EntityMap {
 		else {
 			false
 		}
+	}
+	pub fn find_handle(&self, kind: EntityKind) -> Option<EntityHandle> {
+		for ent in self.map.values() {
+			if ent.kind == kind {
+				return Some(ent.handle);
+			}
+		}
+		None
 	}
 }
 

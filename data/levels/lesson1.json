@@ -23,37 +23,10 @@
 		"    .#######.    ",
 		"    .........    "
 	],
-	"start": [8, 7],
-	"tiles": {
-		" ": {
-			"tile": "Wall",
-			"sprite": "Blank",
-			"model": "Empty",
-			"solid": true
-		},
-		".": {
-			"tile": "Floor",
-			"sprite": "Floor",
-			"model": "Floor",
-			"solid": false
-		},
-		"#": {
-			"tile": "Wall",
-			"sprite": "Wall",
-			"model": "Wall",
-			"solid": true
-		},
-		"X": {
-			"tile": "Exit",
-			"sprite": "Exit1",
-			"model": "Portal",
-			"solid": false
-		},
-		"i": {
-			"tile": "Hint",
-			"sprite": "Hint",
-			"model": "Floor",
-			"solid": false
+	"entities": [
+		{
+			"kind": "Player",
+			"pos": [8, 7]
 		}
-	}
+	]
 }

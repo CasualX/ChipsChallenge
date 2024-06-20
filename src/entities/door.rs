@@ -13,6 +13,7 @@ pub fn create(game: &mut Game, x: i32, y: i32, key: KeyColor) {
 		},
 		pos: Vec2(x, y),
 		move_dir: None,
+		move_spd: 0.0,
 		face_dir: None,
 		frozen: false,
 		move_time: 0.0,
@@ -38,6 +39,7 @@ pub fn create(game: &mut Game, x: i32, y: i32, key: KeyColor) {
 		anim: Animation::None,
 		atime: 0.0,
 		alpha: 1.0,
+		vis: true,
 		live: true,
 	});
 }

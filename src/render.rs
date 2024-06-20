@@ -187,7 +187,7 @@ fn draw_floor(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprit
 	});
 }
 
-fn draw_shadow(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Sprite, a: f32) {
+fn draw_shadow(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Sprite, skew: f32, a: f32) {
 	let gfx = sprite.index();
 
 	let mut p = cv.begin(shade::PrimType::Triangles, 4, 2);
@@ -195,7 +195,7 @@ fn draw_shadow(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, spri
 
 	let x = pos.x;
 	let y = pos.y;
-	let s = 10.0;
+	let s = skew;
 
 	let u = gfx.x as f32 * (TILE_SIZE + 2.0) + 1.0;
 	let v = gfx.y as f32 * (TILE_SIZE + 2.0) + 1.0;
@@ -342,6 +342,7 @@ fn draw(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Spr
 		Model::Sprite => draw_floor(cv, pos, sprite, 0.0, 20.0, alpha, t),
 		Model::Portal => draw_portal(cv, pos, sprite),
 		Model::FlatSprite => draw_floor(cv, pos, sprite, 3.0, 12.0, alpha, t),
+		Model::ReallyFlatSprite => draw_floor(cv, pos, sprite, 6.0, 10.0, alpha, t),
 		_ => unimplemented!(),
 	}
 }
@@ -373,16 +374,19 @@ pub fn field(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, game
 	// Render the object shadows
 	cv.blend_mode = shade::BlendMode::Alpha;
 	for obj in game.objects.map.values() {
-		if !obj.live {
+		if !obj.live || !obj.vis {
 			continue;
 		}
 		if matches!(obj.model, Model::Sprite | Model::FlatSprite) {
-			draw_shadow(cv, obj.pos, obj.sprite, obj.alpha);
+			draw_shadow(cv, obj.pos, obj.sprite, 10.0, obj.alpha);
+		}
+		if matches!(obj.model, Model::ReallyFlatSprite) {
+			draw_shadow(cv, obj.pos, obj.sprite, 2.0, obj.alpha);
 		}
 	}
 	// Render the objects
 	for obj in game.objects.map.values() {
-		if !obj.live {
+		if !obj.live || !obj.vis {
 			continue;
 		}
 		draw(cv, obj.pos, obj.sprite, obj.model, obj.alpha, Transform3::IDENTITY);

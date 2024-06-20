@@ -16,6 +16,7 @@ pub struct Object {
 	pub anim: Animation,
 	pub atime: f32,
 	pub alpha: f32,
+	pub vis: bool,
 	pub live: bool,
 }
 
@@ -27,18 +28,23 @@ impl Object {
 
 		let update_fn = match self.entity_kind {
 			EntityKind::Player => entities::player::update,
-			EntityKind::Chip => entities::chip::update,
-			EntityKind::Block => entities::block::update,
+			EntityKind::Chip => entities::pickup::update,
 			EntityKind::Gate => entities::gate::update,
-			EntityKind::BlueKey => entities::key::update,
-			EntityKind::RedKey => entities::key::update,
-			EntityKind::GreenKey => entities::key::update,
-			EntityKind::YellowKey => entities::key::update,
+			EntityKind::Block => entities::block::update,
+			EntityKind::Flippers => entities::pickup::update,
+			EntityKind::FireBoots => entities::pickup::update,
+			EntityKind::IceSkates => entities::pickup::update,
+			EntityKind::SuctionBoots => entities::pickup::update,
+			EntityKind::BlueKey => entities::pickup::update,
+			EntityKind::RedKey => entities::pickup::update,
+			EntityKind::GreenKey => entities::pickup::update,
+			EntityKind::YellowKey => entities::pickup::update,
 			EntityKind::BlueDoor => entities::door::update,
 			EntityKind::RedDoor => entities::door::update,
 			EntityKind::GreenDoor => entities::door::update,
 			EntityKind::YellowDoor => entities::door::update,
 			EntityKind::EnemyBug => entities::bug::update,
+			EntityKind::EnemyTank => entities::tank::update,
 		};
 		update_fn(self, ctx);
 
