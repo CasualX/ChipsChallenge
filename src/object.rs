@@ -31,6 +31,7 @@ impl Object {
 			EntityKind::Chip => entities::pickup::update,
 			EntityKind::Gate => entities::gate::update,
 			EntityKind::Block => entities::block::update,
+			EntityKind::Wall => entities::wall::update,
 			EntityKind::Flippers => entities::pickup::update,
 			EntityKind::FireBoots => entities::pickup::update,
 			EntityKind::IceSkates => entities::pickup::update,

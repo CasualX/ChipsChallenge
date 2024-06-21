@@ -1,7 +1,5 @@
 use super::*;
 
-const MOVE_SPEED: f32 = 0.125;
-
 pub fn create(game: &mut Game, x: i32, y: i32) {
 	let entity_h = game.entities.alloc();
 	let object_h = game.objects.alloc();
@@ -33,7 +31,7 @@ pub fn create(game: &mut Game, x: i32, y: i32) {
 
 pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 	if let Some(_) = ent.move_dir {
-		if ctx.time >= ent.move_time + MOVE_SPEED {
+		if ctx.time >= ent.move_time + ent.move_spd {
 			ent.move_dir = None;
 			ent.face_dir = None;
 			if ctx.field.get_tile(ent.pos).tile == Tile::Water {
@@ -99,7 +97,7 @@ pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {
 	if let Some(ent) = ent {
 		obj.pos = ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
 		if let Some(move_dir) = ent.move_dir {
-			let t = 1.0 - (ctx.time - ent.move_time) / 0.125;
+			let t = 1.0 - (ctx.time - ent.move_time) / ent.move_spd;
 			obj.pos += (-move_dir.to_vec().map(|c| c as f32 * 32.0) * t).vec3(0.0);
 		}
 	}

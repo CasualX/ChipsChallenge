@@ -223,7 +223,7 @@ fn draw_shadow(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, spri
 	});
 }
 
-fn draw_wall(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Sprite) {
+fn draw_wall(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, w: f32, sprite: Sprite) {
 	let gfx = sprite.index();
 
 	let mut p = cv.begin(shade::PrimType::Triangles, 8, 10);
@@ -243,27 +243,27 @@ fn draw_wall(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite
 	let u = gfx.x as f32 * (TILE_SIZE + 2.0) + 1.0;
 	let v = gfx.y as f32 * (TILE_SIZE + 2.0) + 1.0;
 
-	let s = 4.0;//if matches!(sprite, Sprite::Wall) { 0.0 } else { 4.0 };
+	let s = 4.0 + w;//if matches!(sprite, Sprite::Wall) { 0.0 } else { 4.0 };
 	let t = 4.0;
 	let h = 20.0; //if block.is_door() { 15.0 } else { 20.0 };
 
 	p.add_vertex(Vertex {
-		pos: Vec3(x, y, z),
+		pos: Vec3(x + w, y + w, z),
 		uv: Vec2(u, v),
 		color: [255, 255, 255, 255],
 	});
 	p.add_vertex(Vertex {
-		pos: Vec3(x, y + TILE_SIZE, z),
+		pos: Vec3(x + w, y + TILE_SIZE - w, z),
 		uv: Vec2(u, v + TILE_SIZE),
 		color: [255, 255, 255, 255],
 	});
 	p.add_vertex(Vertex {
-		pos: Vec3(x + TILE_SIZE, y + TILE_SIZE, z),
+		pos: Vec3(x + TILE_SIZE - w, y + TILE_SIZE - w, z),
 		uv: Vec2(u + TILE_SIZE, v + TILE_SIZE),
 		color: [255, 255, 255, 255],
 	});
 	p.add_vertex(Vertex {
-		pos: Vec3(x + TILE_SIZE, y, z),
+		pos: Vec3(x + TILE_SIZE - w, y + w, z),
 		uv: Vec2(u + TILE_SIZE, v),
 		color: [255, 255, 255, 255],
 	});
@@ -338,7 +338,8 @@ fn draw_portal(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, spri
 fn draw(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Sprite, model: Model, alpha: f32, t: Transform3<f32>) {
 	match model {
 		Model::Floor => draw_floor(cv, pos, sprite, 0.0, 0.0, alpha, t),
-		Model::Wall => draw_wall(cv, pos, sprite),
+		Model::Wall => draw_wall(cv, pos, 0.0, sprite),
+		Model::ThinWall => draw_wall(cv, pos, 2.0, sprite),
 		Model::Sprite => draw_floor(cv, pos, sprite, 0.0, 20.0, alpha, t),
 		Model::Portal => draw_portal(cv, pos, sprite),
 		Model::FlatSprite => draw_floor(cv, pos, sprite, 3.0, 12.0, alpha, t),

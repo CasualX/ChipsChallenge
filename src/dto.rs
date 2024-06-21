@@ -24,7 +24,7 @@ impl Game {
 		let ld: dto::LessonDto = serde_json::from_str(json).unwrap();
 		assert_eq!(ld.map.len(), ld.height as usize);
 		self.field.time_limit = ld.time;
-		self.field.chips = 0;
+		self.field.chips = ld.chips;
 		self.field.width = ld.width;
 		self.field.height = ld.height;
 		self.field.map.clear();
@@ -89,6 +89,20 @@ impl Game {
 			model: Model::Floor,
 			solid: false,
 		});
+		map.insert('t', self.field.tiles.len());
+		self.field.tiles.push(TileProps {
+			tile: Tile::IceUL,
+			sprite: Sprite::IceUL,
+			model: Model::Floor,
+			solid: false,
+		});
+		map.insert('w', self.field.tiles.len());
+		self.field.tiles.push(TileProps {
+			tile: Tile::IceDL,
+			sprite: Sprite::IceDL,
+			model: Model::Floor,
+			solid: false,
+		});
 		map.insert('*', self.field.tiles.len());
 		self.field.tiles.push(TileProps {
 			tile: Tile::Fire,
@@ -140,15 +154,15 @@ impl Game {
 		});
 		map.insert('(', self.field.tiles.len());
 		self.field.tiles.push(TileProps {
-			tile: Tile::Wall,
-			sprite: Sprite::OnOffWallA,
-			model: Model::Wall,
-			solid: true,
+			tile: Tile::Floor,
+			sprite: Sprite::OnOffFloor,
+			model: Model::Floor,
+			solid: false,
 		});
 		map.insert(')', self.field.tiles.len());
 		self.field.tiles.push(TileProps {
 			tile: Tile::Floor,
-			sprite: Sprite::OnOffWallB,
+			sprite: Sprite::OnOffFloor,
 			model: Model::Floor,
 			solid: false,
 		});
@@ -159,6 +173,7 @@ impl Game {
 				EntityKind::Chip => entities::pickup::create(self, e.pos[0], e.pos[1], Pickup::Chip),
 				EntityKind::Gate => entities::gate::create(self, e.pos[0], e.pos[1]),
 				EntityKind::Block => entities::block::create(self, e.pos[0], e.pos[1]),
+				EntityKind::Wall => entities::wall::create(self, e.pos[0], e.pos[1], e.face_dir),
 				EntityKind::Flippers => entities::pickup::create(self, e.pos[0], e.pos[1], Pickup::Flippers),
 				EntityKind::FireBoots => entities::pickup::create(self, e.pos[0], e.pos[1], Pickup::FireBoots),
 				EntityKind::IceSkates => entities::pickup::create(self, e.pos[0], e.pos[1], Pickup::IceSkates),
@@ -194,63 +209,69 @@ impl Game {
 						n.chips += 1;
 						entities::pickup::create(self, x, y, Pickup::Chip);
 						'.'
-					},
+					}
 					b'=' => {
 						entities::gate::create(self, x, y);
 						'.'
-					},
+					}
 					b'+' => {
 						entities::block::create(self, x, y);
 						'.'
-					},
+					}
 					b'b' => {
 						n.keys[0] += 1;
 						entities::pickup::create(self, x, y, Pickup::BlueKey);
 						'.'
-					},
+					}
 					b'r' => {
 						n.keys[1] += 1;
 						entities::pickup::create(self, x, y, Pickup::RedKey);
 						'.'
-					},
+					}
 					b'g' => {
 						n.keys[2] += 1;
 						entities::pickup::create(self, x, y, Pickup::GreenKey);
 						'.'
-					},
+					}
 					b'y' => {
 						n.keys[3] += 1;
 						entities::pickup::create(self, x, y, Pickup::YellowKey);
 						'.'
-					},
+					}
 					b'B' => {
 						n.doors[0] += 1;
 						entities::door::create(self, x, y, KeyColor::Blue);
 						'.'
-					},
+					}
 					b'R' => {
 						n.doors[1] += 1;
 						entities::door::create(self, x, y, KeyColor::Red);
 						'.'
-					},
+					}
 					b'G' => {
 						n.doors[2] += 1;
 						entities::door::create(self, x, y, KeyColor::Green);
 						'.'
-					},
+					}
 					b'Y' => {
 						n.doors[3] += 1;
 						entities::door::create(self, x, y, KeyColor::Yellow);
 						'.'
 					},
+					b'(' => {
+						entities::wall::create(self, x, y, Some(Dir::Up));
+						'('
+					}
+					b')' => {
+						entities::wall::create(self, x, y, Some(Dir::Down));
+						')'
+					}
 					chr => chr as char,
 				};
 				let index = map[&tile];
 				self.field.map.push(index as u8);
 			}
 		}
-		// assert_eq!(n.keys, n.doors);
-		self.field.chips = n.chips;
 
 		self.pl.entity = self.entities.find_handle(EntityKind::Player).expect("Player entity not found");
 		self.pl.object = self.objects.find_handle(EntityKind::Player).expect("Player object not found");

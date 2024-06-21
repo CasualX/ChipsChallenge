@@ -42,75 +42,22 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 		ent.move_dir = None;
 	}
 
-	let tile = ctx.field.get_tile(ent.pos).tile;
-
-	// Turn dirt to floor after stepping on it
-	let floor = ctx.field.lookup_tile(Tile::Floor).unwrap();
-	if ent.move_dir.is_none() && tile == Tile::Dirt {
-		ctx.field.set_tile(ent.pos, floor);
-	}
-
-	// Freeze the player when they reach the exit
-	if tile == Tile::Exit {
-		ent.frozen = true;
-	}
-
-	if orig_dir.is_some() && ent.move_dir.is_none() {
+	// Wait until movement is cleared before accepting new input
+	if ent.move_dir.is_none() {
 		let tile = ctx.field.get_tile(ent.pos).tile;
 
-		if tile == Tile::BlueSwitch {
-			for other in ctx.entities.map.values_mut() {
-				if other.kind == EntityKind::EnemyTank {
-					if let Some(face_dir) = other.face_dir {
-						other.face_dir = Some(face_dir.turn_around());
-					}
-				}
-			}
+		// Turn dirt to floor after stepping on it
+		let floor = ctx.field.lookup_tile(Tile::Floor).unwrap();
+		if matches!(tile, Tile::Dirt) {
+			ctx.field.set_tile(ent.pos, floor);
 		}
-	}
 
-	if ent.move_dir.is_none() {
-		let (mut allow_left, mut allow_right, mut allow_up, mut allow_down) = (true, true, true, true);
-
-		// Force movement when stepping on a force tile
-		let mut force_dir = None;
-		if !ctx.pl.inv.suction_boots {
-			if tile == Tile::ForceLeft {
-				force_dir = Some(Dir::Left);
-			}
-			else if tile == Tile::ForceRight {
-				force_dir = Some(Dir::Right);
-			}
-			else if tile == Tile::ForceUp {
-				force_dir = Some(Dir::Up);
-			}
-			else if tile == Tile::ForceDown {
-				force_dir = Some(Dir::Down);
-			}
-			if let Some(force_dir) = force_dir {
-				match force_dir {
-					Dir::Left | Dir::Right => {
-						allow_left = false;
-						allow_right = false;
-						allow_up = !ctx.field.get_tile(ent.pos + Dir::Up.to_vec()).solid;
-						allow_down = !ctx.field.get_tile(ent.pos + Dir::Down.to_vec()).solid;
-					},
-					Dir::Up | Dir::Down => {
-						allow_left = !ctx.field.get_tile(ent.pos + Dir::Left.to_vec()).solid;
-						allow_right = !ctx.field.get_tile(ent.pos + Dir::Right.to_vec()).solid;
-						allow_up = false;
-						allow_down = false;
-					},
-				}
-				// If the player just stepped on a force tile, they cannot override it
-				if ctx.pl.inv.force_dir.is_none() {
-					allow_left = false;
-					allow_right = false;
-					allow_up = false;
-					allow_down = false;
-				}
-			}
+		// Freeze the player when they reach the exit
+		if matches!(tile, Tile::Exit) {
+			ent.frozen = true;
 		}
+
+		// Set the player's move speed
 		if ctx.pl.inv.suction_boots && matches!(tile, Tile::ForceLeft | Tile::ForceRight | Tile::ForceUp | Tile::ForceDown) {
 			ent.move_spd = 0.125 + 0.125 * 0.5;
 		}
@@ -118,102 +65,138 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			ent.move_spd = 0.125;
 		}
 
-		let mut ice_dir = None;
-		if !ctx.pl.inv.ice_skates {
+		// First tick after stepping on a new tile
+		'end_move: {
 			if let Some(orig_dir) = orig_dir {
-				ice_dir = match tile {
-					Tile::IceUL => match orig_dir {
-						Dir::Up => Some(Dir::Right),
-						Dir::Left => Some(Dir::Down),
-						_ => Some(orig_dir),
-					},
-					Tile::IceUR => match orig_dir {
-						Dir::Up => Some(Dir::Left),
-						Dir::Right => Some(Dir::Down),
-						_ => Some(orig_dir),
-					},
-					Tile::IceDL => match orig_dir {
-						Dir::Down => Some(Dir::Right),
-						Dir::Left => Some(Dir::Up),
-						_ => Some(orig_dir),
-					},
-					Tile::IceDR => match orig_dir {
-						Dir::Down => Some(Dir::Left),
-						Dir::Right => Some(Dir::Up),
-						_ => Some(orig_dir),
-					},
-					Tile::Ice => Some(orig_dir),
-					_ => None,
-				};
-				if ice_dir.is_some() {
-					allow_left = false;
-					allow_right = false;
-					allow_up = false;
-					allow_down = false;
+
+				// Handle switch tiles
+				for other in ctx.entities.map.values_mut() {
+					if matches!(tile, Tile::BlueSwitch) {
+						if other.kind == EntityKind::EnemyTank {
+							if let Some(face_dir) = other.face_dir {
+								other.face_dir = Some(face_dir.turn_around());
+							}
+						}
+					}
+					else if matches!(tile, Tile::GreenSwitch) {
+						if other.kind == EntityKind::Wall {
+							if let Some(face_dir) = other.face_dir {
+								other.face_dir = Some(face_dir.turn_around());
+								other.move_time = ctx.time;
+							}
+						}
+					}
 				}
-				force_dir = ice_dir;
-			}
-		}
 
-		let mut move_dir = force_dir;
-		if ctx.input.left && allow_left {
-			move_dir = Some(Dir::Left);
-		}
-		else if ctx.input.right && allow_right {
-			move_dir = Some(Dir::Right);
-		}
-		else if ctx.input.up && allow_up {
-			move_dir = Some(Dir::Up);
-		}
-		else if ctx.input.down && allow_down {
-			move_dir = Some(Dir::Down);
-		}
-
-		if ent.frozen {
-			move_dir = None;
-		}
-
-		if let Some(mut move_dir) = move_dir {
-			let new_pos = ent.pos + move_dir.to_vec();
-			let mut blocking = ctx.field.get_tile(new_pos).solid;
-			if !blocking {
-				for handle in ctx.entities.map.keys().cloned().collect::<Vec<_>>() {
-					let Some(mut ent) = ctx.entities.remove(handle) else { continue };
-					let mut ictx = InteractContext {
-						remove_entity: false,
-						blocking: false,
-						push_dir: move_dir,
+				// Handle ice physics
+				if !ctx.pl.inv.ice_skates && matches!(tile, Tile::Ice | Tile::IceUL | Tile::IceUR | Tile::IceDL | Tile::IceDR) {
+					let (ice_dir, back_dir) = match orig_dir {
+						Dir::Up => match tile {
+							Tile::IceUL => (Dir::Right, Dir::Down),
+							Tile::IceUR => (Dir::Left, Dir::Down),
+							Tile::IceDR => (Dir::Up, Dir::Left),
+							Tile::IceDL => (Dir::Up, Dir::Right),
+							_ => (orig_dir, orig_dir.turn_around()),
+						},
+						Dir::Left => match tile {
+							Tile::IceUL => (Dir::Down, Dir::Right),
+							Tile::IceUR => (Dir::Left, Dir::Down),
+							Tile::IceDR => (Dir::Left, Dir::Up),
+							Tile::IceDL => (Dir::Up, Dir::Right),
+							_ => (orig_dir, orig_dir.turn_around()),
+						},
+						Dir::Down => match tile {
+							Tile::IceUL => (Dir::Down, Dir::Right),
+							Tile::IceUR => (Dir::Down, Dir::Left),
+							Tile::IceDR => (Dir::Down, Dir::Up),
+							Tile::IceDL => (Dir::Right, Dir::Up),
+							_ => (orig_dir, orig_dir.turn_around()),
+						},
+						Dir::Right => match tile {
+							Tile::IceUL => (Dir::Right, Dir::Down),
+							Tile::IceUR => (Dir::Down, Dir::Left),
+							Tile::IceDR => (Dir::Up, Dir::Left),
+							Tile::IceDL => (Dir::Right, Dir::Up),
+							_ => (orig_dir, orig_dir.turn_around()),
+						},
 					};
-					if ent.pos == new_pos {
-						ent.interact(ctx, &mut ictx);
+					// If the player is blocked, try to turn around
+					if !try_move(ent, ice_dir, ctx) {
+						if !try_move(ent, back_dir, ctx) {
+							// Softlocked!
+						}
 					}
-					if !ictx.remove_entity {
-						ctx.entities.insert(ent);
-					}
-					blocking |= ictx.blocking;
+					break 'end_move;
 				}
 			}
 
-			// Very questionable logic...
-			if let Some(ice_dir) = ice_dir {
-				if blocking {
-					move_dir = ice_dir.turn_around();
-					blocking = false;
-				}
+			let force_dir = match tile {
+				_ if ctx.pl.inv.suction_boots => None,
+				Tile::ForceLeft => Some(Dir::Left),
+				Tile::ForceRight => Some(Dir::Right),
+				Tile::ForceUp => Some(Dir::Up),
+				Tile::ForceDown => Some(Dir::Down),
+				_ => None,
+			};
+			let first_time_force_dir = ctx.pl.inv.force_dir.is_none();
+			ctx.pl.inv.force_dir = force_dir;
+			if let Some(force_dir) = force_dir {
+
+				let override_dir = match force_dir {
+					_ if first_time_force_dir => None,
+					Dir::Left | Dir::Right => if ctx.input.up { Some(Dir::Up) } else if ctx.input.down { Some(Dir::Down) } else { None },
+					Dir::Up | Dir::Down => if ctx.input.left { Some(Dir::Left) } else if ctx.input.right { Some(Dir::Right) } else { None },
+				};
+
+				match override_dir {
+					Some(override_dir) if try_move(ent, override_dir, ctx) => true,
+					_ => try_move(ent, force_dir, ctx),
+				};
+
+				break 'end_move;
 			}
 
-			ent.face_dir = Some(move_dir);
-			ent.move_time = ctx.time;
-			if !blocking {
-				ent.move_dir = Some(move_dir);
-				ent.pos += move_dir.to_vec();
-				ctx.pl.inv.steps += 1;
-				ctx.pl.inv.force_dir = force_dir;
-			}
+			if ent.frozen { }
+			else if ctx.input.left && try_move(ent, Dir::Left, ctx) { }
+			else if ctx.input.right && try_move(ent, Dir::Right, ctx) { }
+			else if ctx.input.up && try_move(ent, Dir::Up, ctx) { }
+			else if ctx.input.down && try_move(ent, Dir::Down, ctx) { }
 		}
 	}
 
 	Lifecycle::KeepAlive
+}
+
+fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
+	let new_pos = ent.pos + move_dir.to_vec();
+	let mut blocking = ctx.field.get_tile(new_pos).solid;
+	if !blocking {
+		for handle in ctx.entities.map.keys().cloned().collect::<Vec<_>>() {
+			let Some(mut ent) = ctx.entities.remove(handle) else { continue };
+			let mut ictx = InteractContext {
+				remove_entity: false,
+				blocking: false,
+				push_dir: move_dir,
+			};
+			if ent.pos == new_pos {
+				ent.interact(ctx, &mut ictx);
+			}
+			if !ictx.remove_entity {
+				ctx.entities.insert(ent);
+			}
+			blocking |= ictx.blocking;
+		}
+	}
+
+	ent.face_dir = Some(move_dir);
+	ent.move_time = ctx.time;
+	if !blocking {
+		ent.move_dir = Some(move_dir);
+		ent.pos = new_pos;
+		ctx.pl.inv.steps += 1;
+	}
+
+	return !blocking;
 }
 
 pub fn interact(_ent: &mut Entity, _ctx: &mut ThinkContext, ictx: &mut InteractContext) {
