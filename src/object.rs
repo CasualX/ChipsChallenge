@@ -46,6 +46,7 @@ impl Object {
 			EntityKind::YellowDoor => entities::door::update,
 			EntityKind::EnemyBug => entities::bug::update,
 			EntityKind::EnemyTank => entities::tank::update,
+			EntityKind::Bomb => entities::bomb::update,
 		};
 		update_fn(self, ctx);
 

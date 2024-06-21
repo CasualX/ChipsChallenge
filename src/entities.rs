@@ -8,3 +8,4 @@ pub mod block;
 pub mod wall;
 pub mod bug;
 pub mod tank;
+pub mod bomb;

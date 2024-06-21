@@ -138,17 +138,31 @@ impl Game {
 			model: Model::Floor,
 			solid: false,
 		});
-		map.insert('o', self.field.tiles.len());
-		self.field.tiles.push(TileProps {
-			tile: Tile::BlueSwitch,
-			sprite: Sprite::BlueSwitch,
-			model: Model::Floor,
-			solid: false,
-		});
 		map.insert('p', self.field.tiles.len());
 		self.field.tiles.push(TileProps {
 			tile: Tile::GreenSwitch,
 			sprite: Sprite::GreenSwitch,
+			model: Model::Floor,
+			solid: false,
+		});
+		map.insert('m', self.field.tiles.len());
+		self.field.tiles.push(TileProps {
+			tile: Tile::RedSwitch,
+			sprite: Sprite::RedSwitch,
+			model: Model::Floor,
+			solid: false,
+		});
+		map.insert('q', self.field.tiles.len());
+		self.field.tiles.push(TileProps {
+			tile: Tile::BrownSwitch,
+			sprite: Sprite::BrownSwitch,
+			model: Model::Floor,
+			solid: false,
+		});
+		map.insert('o', self.field.tiles.len());
+		self.field.tiles.push(TileProps {
+			tile: Tile::BlueSwitch,
+			sprite: Sprite::BlueSwitch,
 			model: Model::Floor,
 			solid: false,
 		});
@@ -188,6 +202,7 @@ impl Game {
 				EntityKind::YellowDoor => entities::door::create(self, e.pos[0], e.pos[1], KeyColor::Yellow),
 				EntityKind::EnemyBug => entities::bug::create(self, e.pos[0], e.pos[1], e.face_dir),
 				EntityKind::EnemyTank => entities::tank::create(self, e.pos[0], e.pos[1], e.face_dir),
+				EntityKind::Bomb => entities::bomb::create(self, e.pos[0], e.pos[1]),
 			}
 		}
 
@@ -265,6 +280,10 @@ impl Game {
 					b')' => {
 						entities::wall::create(self, x, y, Some(Dir::Down));
 						')'
+					}
+					b'O' => {
+						entities::bomb::create(self, x, y);
+						'.'
 					}
 					chr => chr as char,
 				};

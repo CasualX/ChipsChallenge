@@ -25,6 +25,7 @@ pub enum EntityKind {
 	YellowDoor,
 	EnemyBug,
 	EnemyTank,
+	Bomb,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -61,6 +62,7 @@ impl Entity {
 			EntityKind::YellowDoor => entities::door::think,
 			EntityKind::EnemyBug => entities::bug::think,
 			EntityKind::EnemyTank => entities::tank::think,
+			EntityKind::Bomb => entities::bomb::think,
 		};
 		think_fn(self, ctx)
 	}
@@ -87,6 +89,7 @@ impl Entity {
 			EntityKind::YellowDoor => entities::door::interact,
 			EntityKind::EnemyBug => entities::bug::interact,
 			EntityKind::EnemyTank => entities::tank::interact,
+			EntityKind::Bomb => entities::bomb::interact,
 		};
 		interact_fn(self, ctx, ictx)
 	}

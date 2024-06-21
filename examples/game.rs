@@ -80,7 +80,7 @@ fn main() {
 	let mut past_now = time::Instant::now();
 
 	let mut game = chips_challenge::Game::default();
-	game.load_level(include_str!("../data/levels/lesson4.json"));
+	game.load_level(include_str!("../data/levels/lesson5.json"));
 	let mut input = chips_challenge::Input::default();
 
 	// Main loop
