@@ -32,6 +32,15 @@
 		{
 			"kind": "Player",
 			"pos": [11, 16]
+		},
+		{
+			"kind": "PinkBall",
+			"pos": [8, 12],
+			"face_dir": "Right"
+		},
+		{
+			"kind": "Spawner",
+			"pos": [9, 15]
 		}
 	]
 }

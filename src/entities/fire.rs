@@ -5,7 +5,7 @@ pub fn create(game: &mut Game, x: i32, y: i32) {
 	let object_h = game.objects.alloc();
 	game.entities.insert(Entity {
 		handle: entity_h,
-		kind: EntityKind::Bomb,
+		kind: EntityKind::Fire,
 		pos: Vec2(x, y),
 		move_dir: None,
 		move_spd: 0.25,
@@ -17,10 +17,10 @@ pub fn create(game: &mut Game, x: i32, y: i32) {
 	game.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
-		entity_kind: EntityKind::Bomb,
+		entity_kind: EntityKind::Fire,
 		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
 		vel: Vec3::ZERO,
-		sprite: Sprite::Bomb,
+		sprite: Sprite::Fire,
 		model: Model::Sprite,
 		anim: Animation::None,
 		atime: 0.0,

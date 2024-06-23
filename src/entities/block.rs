@@ -11,6 +11,7 @@ pub fn create(game: &mut Game, x: i32, y: i32) {
 		move_spd: 0.125,
 		face_dir: None,
 		frozen: false,
+		spawner_kind: None,
 		move_time: 0.0,
 	});
 	game.objects.insert(Object {
@@ -44,13 +45,14 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 	return Lifecycle::KeepAlive;
 }
 
-fn is_solid_or_dirt(pos: Vec2<i32>, field: &Field, entities: &EntityMap) -> bool {
-	let tile = field.get_tile(pos);
-	if tile.solid || tile.tile == Tile::Dirt {
-		return true;
+fn is_solid_or_dirt(pos: Vec2<i32>, move_dir: Dir, field: &Field, entities: &EntityMap) -> bool {
+	if !field.can_move(pos, move_dir) {
+		return false;
 	}
+
+	let new_pos = pos + move_dir.to_vec();
 	for ent in entities.map.values() {
-		if ent.pos == pos {
+		if ent.pos == new_pos {
 			let solid = match ent.kind {
 				EntityKind::Gate => true,
 				EntityKind::Block => true,
@@ -75,7 +77,7 @@ pub fn interact(ent: &mut Entity, ctx: &mut ThinkContext, ictx: &mut InteractCon
 	}
 
 	let dirt = ctx.field.lookup_tile(Tile::Dirt);
-	if dirt.is_none() || ctx.field.get_tile(ent.pos).tile == Tile::Water || is_solid_or_dirt(ent.pos + ictx.push_dir.to_vec(), &ctx.field, &ctx.entities) {
+	if dirt.is_none() || ctx.field.get_tile(ent.pos).tile == Tile::Water || is_solid_or_dirt(ent.pos, ictx.push_dir, &ctx.field, &ctx.entities) {
 		ictx.blocking = true;
 	}
 	else {

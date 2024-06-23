@@ -13,6 +13,7 @@ pub fn create(game: &mut Game, x: i32, y: i32) {
 		move_spd: 0.125,
 		face_dir: None,
 		frozen: false,
+		spawner_kind: None,
 		move_time: 0.0,
 	});
 	game.objects.insert(Object {
@@ -65,8 +66,8 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			ent.move_spd = 0.125;
 		}
 
-		// First tick after stepping on a new tile
 		'end_move: {
+			// First tick after stepping on a new tile
 			if let Some(orig_dir) = orig_dir {
 
 				// Handle switch tiles
@@ -130,6 +131,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 				}
 			}
 
+			// Handle force tiles
 			let force_dir = match tile {
 				_ if ctx.pl.inv.suction_boots => None,
 				Tile::ForceLeft => Some(Dir::Left),
@@ -143,7 +145,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			if let Some(force_dir) = force_dir {
 
 				let override_dir = match force_dir {
-					_ if first_time_force_dir => None,
+					_ if first_time_force_dir || ent.frozen => None,
 					Dir::Left | Dir::Right => if ctx.input.up { Some(Dir::Up) } else if ctx.input.down { Some(Dir::Down) } else { None },
 					Dir::Up | Dir::Down => if ctx.input.left { Some(Dir::Left) } else if ctx.input.right { Some(Dir::Right) } else { None },
 				};
@@ -156,6 +158,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 				break 'end_move;
 			}
 
+			// Handle player input
 			if ent.frozen { }
 			else if ctx.input.left && try_move(ent, Dir::Left, ctx) { }
 			else if ctx.input.right && try_move(ent, Dir::Right, ctx) { }
@@ -169,8 +172,9 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	let new_pos = ent.pos + move_dir.to_vec();
-	let mut blocking = ctx.field.get_tile(new_pos).solid;
-	if !blocking {
+
+	let mut success = ctx.field.can_move(ent.pos, move_dir);
+	if success {
 		for handle in ctx.entities.map.keys().cloned().collect::<Vec<_>>() {
 			let Some(mut ent) = ctx.entities.remove(handle) else { continue };
 			let mut ictx = InteractContext {
@@ -184,19 +188,21 @@ fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 			if !ictx.remove_entity {
 				ctx.entities.insert(ent);
 			}
-			blocking |= ictx.blocking;
+			if ictx.blocking {
+				success = false;
+			}
 		}
 	}
 
 	ent.face_dir = Some(move_dir);
 	ent.move_time = ctx.time;
-	if !blocking {
+	if success {
 		ent.move_dir = Some(move_dir);
 		ent.pos = new_pos;
 		ctx.pl.inv.steps += 1;
 	}
 
-	return !blocking;
+	return success;
 }
 
 pub fn interact(_ent: &mut Entity, _ctx: &mut ThinkContext, ictx: &mut InteractContext) {

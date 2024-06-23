@@ -33,6 +33,7 @@ pub fn create(game: &mut Game, x: i32, y: i32, item: Pickup) {
 		move_spd: 0.0,
 		face_dir: None,
 		frozen: false,
+		spawner_kind: None,
 		move_time: 0.0,
 	});
 	game.objects.insert(Object {

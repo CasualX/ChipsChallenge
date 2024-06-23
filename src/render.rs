@@ -344,6 +344,7 @@ fn draw(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Spr
 		Model::Portal => draw_portal(cv, pos, sprite),
 		Model::FlatSprite => draw_floor(cv, pos, sprite, 3.0, 12.0, alpha, t),
 		Model::ReallyFlatSprite => draw_floor(cv, pos, sprite, 6.0, 10.0, alpha, t),
+		Model::FloorSprite => draw_floor(cv, pos, sprite, 1.0, 1.0, alpha, t),
 		_ => unimplemented!(),
 	}
 }

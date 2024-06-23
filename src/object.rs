@@ -44,8 +44,12 @@ impl Object {
 			EntityKind::RedDoor => entities::door::update,
 			EntityKind::GreenDoor => entities::door::update,
 			EntityKind::YellowDoor => entities::door::update,
+			EntityKind::Fire => entities::fire::update,
+			EntityKind::Thief => entities::thief::update,
+			EntityKind::Spawner => entities::spawner::update,
 			EntityKind::EnemyBug => entities::bug::update,
 			EntityKind::EnemyTank => entities::tank::update,
+			EntityKind::PinkBall => entities::pink_ball::update,
 			EntityKind::Bomb => entities::bomb::update,
 		};
 		update_fn(self, ctx);

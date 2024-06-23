@@ -14,12 +14,14 @@ mod inventory;
 mod entity;
 mod camera;
 mod entities;
+mod editor;
 
 use self::sprites::*;
 use self::object::*;
 use self::inventory::*;
 use self::entity::*;
 use self::camera::*;
+pub use self::editor::*;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Lifecycle {
@@ -92,13 +94,19 @@ pub enum KeyColor {
 	Yellow,
 }
 
+const SOLID_WALL: u8 = 0xf;
+const PANEL_N: u8 = 0x1;
+const PANEL_E: u8 = 0x2;
+const PANEL_S: u8 = 0x4;
+const PANEL_W: u8 = 0x8;
+
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct TileProps {
 	pub tile: Tile,
 	pub sprite: Sprite,
 	pub model: Model,
-	pub solid: bool,
+	pub solid: u8,
 }
 
 #[derive(Default)]
@@ -134,32 +142,39 @@ impl Field {
 		}
 		None
 	}
-}
-impl ThinkContext {
-	pub fn is_solid(&self, pos: Vec2<i32>) -> bool {
-		let tile = self.field.get_tile(pos);
-		if tile.solid {
-			return true;
+	pub fn can_move(&self, pos: Vec2<i32>, dir: Dir) -> bool {
+		let cur = self.get_tile(pos);
+
+		// Allow movement if the tile is solid
+		if cur.solid == SOLID_WALL {
+			return false;
 		}
 
-		for obj in self.entities.map.values() {
-			if obj.pos == pos {
-				let solid = match obj.kind {
-					EntityKind::Gate => true,
-					EntityKind::Block => true,
-					EntityKind::BlueDoor => true,
-					EntityKind::RedDoor => true,
-					EntityKind::GreenDoor => true,
-					EntityKind::YellowDoor => true,
-					_ => false,
-				};
-				if solid {
-					return true;
-				}
-			}
+		// Check for panels on the current tile
+		let panel = match dir {
+			Dir::Up => PANEL_N,
+			Dir::Left => PANEL_W,
+			Dir::Down => PANEL_S,
+			Dir::Right => PANEL_E,
+		};
+		if cur.solid & panel != 0 {
+			return false;
 		}
 
-		false
+		let next = self.get_tile(pos + dir.to_vec());
+
+		// Check the solid flags of the next tile
+		let panel = match dir {
+			Dir::Up => PANEL_S,
+			Dir::Left => PANEL_E,
+			Dir::Down => PANEL_N,
+			Dir::Right => PANEL_W,
+		};
+		if next.solid & panel != 0 {
+			return false;
+		}
+
+		return true;
 	}
 }
 
@@ -276,6 +291,7 @@ pub struct Game {
 	pl: PlayerState,
 	cam: Camera,
 	field: Field,
+	input: Input,
 	pub objects: ObjectMap,
 	pub entities: EntityMap,
 }
@@ -343,6 +359,7 @@ impl Game {
 		_ = mem::replace(&mut self.objects, ctx.objects);
 		_ = mem::replace(&mut self.entities, ctx.entities);
 		events.append(&mut ctx.events);
+		self.input = input.clone();
 	}
 	pub fn render(&mut self, g: &mut shade::Graphics) {
 		let time = self.time as f32 / 60.0;
@@ -365,13 +382,17 @@ impl Game {
 			//let wiggle_y = 0.0;//((curtime * 1.5).sin() * 32.0) as f32;
 			let pl_obj = self.objects.get(self.pl.object).unwrap();
 			let target = pl_obj.pos;//pl_ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
-			self.cam.eye = self.cam.eye.exp_decay(target, 15.0, 1.0 / 60.0);
-			self.cam.eye.x = target.x;
-			let eye = self.cam.eye + self.cam.offset;
+			self.cam.target = self.cam.target.exp_decay(target, 15.0, 1.0 / 60.0);
+			self.cam.target.x = target.x;
+			let eye = self.cam.target + self.cam.eye_offset;
 			let up = cvmath::Vec3(0.0, 0.0, 1.0);
 			cvmath::Mat4::look_at(eye, target, up, cvmath::RH)
 		};
 		let transform = projection * view;
+
+		self.cam.view_mat = view;
+		self.cam.proj_mat = projection;
+		self.cam.view_proj_mat = transform;
 
 		let mut cv = shade::d2::Canvas::<render::Vertex, render::Uniform>::new();
 		cv.shader = self.resources.shader;

@@ -23,8 +23,12 @@ pub enum EntityKind {
 	RedDoor,
 	GreenDoor,
 	YellowDoor,
+	Thief,
+	Fire,
+	Spawner,
 	EnemyBug,
 	EnemyTank,
+	PinkBall,
 	Bomb,
 }
 
@@ -37,6 +41,7 @@ pub struct Entity {
 	pub move_spd: f32,
 	pub face_dir: Option<Dir>,
 	pub frozen: bool,
+	pub spawner_kind: Option<EntityKind>,
 	pub move_time: f32,
 }
 
@@ -60,8 +65,12 @@ impl Entity {
 			EntityKind::RedDoor => entities::door::think,
 			EntityKind::GreenDoor => entities::door::think,
 			EntityKind::YellowDoor => entities::door::think,
+			EntityKind::Fire => entities::fire::think,
+			EntityKind::Thief => entities::thief::think,
+			EntityKind::Spawner => entities::spawner::think,
 			EntityKind::EnemyBug => entities::bug::think,
 			EntityKind::EnemyTank => entities::tank::think,
+			EntityKind::PinkBall => entities::pink_ball::think,
 			EntityKind::Bomb => entities::bomb::think,
 		};
 		think_fn(self, ctx)
@@ -87,8 +96,12 @@ impl Entity {
 			EntityKind::RedDoor => entities::door::interact,
 			EntityKind::GreenDoor => entities::door::interact,
 			EntityKind::YellowDoor => entities::door::interact,
+			EntityKind::Fire => entities::fire::interact,
+			EntityKind::Thief => entities::thief::interact,
+			EntityKind::Spawner => entities::spawner::interact,
 			EntityKind::EnemyBug => entities::bug::interact,
 			EntityKind::EnemyTank => entities::tank::interact,
+			EntityKind::PinkBall => entities::pink_ball::interact,
 			EntityKind::Bomb => entities::bomb::interact,
 		};
 		interact_fn(self, ctx, ictx)

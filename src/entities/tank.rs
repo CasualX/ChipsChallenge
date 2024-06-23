@@ -11,6 +11,7 @@ pub fn create(game: &mut Game, x: i32, y: i32, face_dir: Option<Dir>) {
 		move_spd: 0.25,
 		face_dir,
 		frozen: false,
+		spawner_kind: None,
 		move_time: 0.0,
 	});
 	game.objects.insert(Object {
@@ -30,44 +31,44 @@ pub fn create(game: &mut Game, x: i32, y: i32, face_dir: Option<Dir>) {
 }
 
 pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
-	let face_dir = ent.face_dir.unwrap_or(Dir::Up);
-
 	if ctx.time >= ent.move_time + ent.move_spd {
 		ent.move_dir = None;
 	}
 
 	if ctx.time >= ent.move_time + ent.move_spd {
-		let forward_pos = ent.pos + face_dir.to_vec();
-
-		if walkable(forward_pos, &ctx.field, &ctx.entities) {
-			ent.move_dir = Some(face_dir);
-			ent.move_time = ctx.time;
-			ent.pos = forward_pos;
+		if let Some(face_dir) = ent.face_dir {
+			try_move(ent, face_dir, ctx);
 		}
 	}
 
 	return Lifecycle::KeepAlive;
 }
 
-fn walkable(pos: Vec2<i32>, field: &Field, entities: &EntityMap) -> bool {
-	let tile = field.get_tile(pos);
-	if tile.solid {
-		return false;
-	}
-	for ent in entities.map.values() {
-		if ent.pos != pos {
-			continue;
+fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
+	let new_pos = ent.pos + move_dir.to_vec();
+
+	if ctx.field.can_move(ent.pos, move_dir) {
+		for ent in ctx.entities.map.values() {
+			if ent.pos != new_pos {
+				continue;
+			}
+			match ent.kind {
+				EntityKind::Gate => return false,
+				EntityKind::Block if ent.face_dir == Some(Dir::Up) => return false,
+				EntityKind::Wall => return false,
+				EntityKind::BlueDoor => return false,
+				EntityKind::RedDoor => return false,
+				EntityKind::GreenDoor => return false,
+				EntityKind::YellowDoor => return false,
+				_ => (),
+			}
 		}
-		match ent.kind {
-			EntityKind::Gate => return false,
-			EntityKind::Block => return false,
-			EntityKind::BlueDoor => return false,
-			EntityKind::RedDoor => return false,
-			EntityKind::GreenDoor => return false,
-			EntityKind::YellowDoor => return false,
-			_ => (),
-		}
 	}
+
+	ent.face_dir = Some(move_dir);
+	ent.move_dir = Some(move_dir);
+	ent.move_time = ctx.time;
+	ent.pos = new_pos;
 	return true;
 }
 

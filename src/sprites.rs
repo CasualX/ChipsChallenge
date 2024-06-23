@@ -10,19 +10,25 @@ pub enum Tile {
 	Water,
 	Dirt,
 	Fire,
-	ForceUp,
-	ForceLeft,
-	ForceDown,
-	ForceRight,
 	Ice,
 	IceUL,
 	IceUR,
 	IceDL,
 	IceDR,
+	ForceUp,
+	ForceLeft,
+	ForceDown,
+	ForceRight,
+	PanelEast,
+	PanelSouth,
+	PanelSE,
 	GreenSwitch,
 	RedSwitch,
 	BrownSwitch,
 	BlueSwitch,
+	Teleport,
+	BearTrap,
+	OneWay,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -51,6 +57,11 @@ pub enum Sprite {
 	ForceLeft,
 	ForceDown,
 	ForceRight,
+	PanelNorth,
+	PanelWest,
+	PanelSouth,
+	PanelEast,
+	PanelSE,
 	PowerFlippers,
 	PowerFireBoots,
 	PowerIceSkates,
@@ -85,6 +96,7 @@ pub enum Sprite {
 	OnOffWall,
 	OnOffFloor,
 	Bomb,
+	Thief,
 	BugUp,
 	BugLeft,
 	BugDown,
@@ -93,6 +105,7 @@ pub enum Sprite {
 	TankLeft,
 	TankDown,
 	TankRight,
+	PinkBall,
 }
 
 impl Sprite {
@@ -120,6 +133,11 @@ impl Sprite {
 			Sprite::ForceLeft => Vec2(1, 4),
 			Sprite::ForceDown => Vec2(0, 13),
 			Sprite::ForceRight => Vec2(1, 3),
+			Sprite::PanelNorth => Vec2(0, 6),
+			Sprite::PanelWest => Vec2(0, 7),
+			Sprite::PanelSouth => Vec2(0, 8),
+			Sprite::PanelEast => Vec2(0, 9),
+			Sprite::PanelSE => Vec2(4, 0),
 			Sprite::PowerFlippers => Vec2(6, 8),
 			Sprite::PowerFireBoots => Vec2(6, 9),
 			Sprite::PowerIceSkates => Vec2(6, 10),
@@ -154,6 +172,7 @@ impl Sprite {
 			Sprite::OnOffWall => Vec2(2, 5),
 			Sprite::OnOffFloor => Vec2(2, 6),
 			Sprite::Bomb => Vec2(2, 10),
+			Sprite::Thief => Vec2(2, 1),
 			Sprite::BugUp => Vec2(4, 0),
 			Sprite::BugLeft => Vec2(4, 1),
 			Sprite::BugDown => Vec2(4, 2),
@@ -162,6 +181,7 @@ impl Sprite {
 			Sprite::TankLeft => Vec2(4, 13),
 			Sprite::TankDown => Vec2(4, 14),
 			Sprite::TankRight => Vec2(4, 15),
+			Sprite::PinkBall => Vec2(4, 5),
 		}
 	}
 }
@@ -178,6 +198,7 @@ pub enum Model {
 	SpriteShadow,
 	FlatSprite,
 	ReallyFlatSprite,
+	FloorSprite,
 	Portal,
 }
 

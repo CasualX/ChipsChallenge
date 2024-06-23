@@ -5,9 +5,9 @@ pub fn create(game: &mut Game, x: i32, y: i32, face_dir: Option<Dir>) {
 	let object_h = game.objects.alloc();
 	game.entities.insert(Entity {
 		handle: entity_h,
-		kind: EntityKind::EnemyBug,
+		kind: EntityKind::PinkBall,
 		pos: Vec2(x, y),
-		move_dir: face_dir,
+		move_dir: None,
 		move_spd: 0.25,
 		face_dir,
 		frozen: false,
@@ -17,11 +17,11 @@ pub fn create(game: &mut Game, x: i32, y: i32, face_dir: Option<Dir>) {
 	game.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
-		entity_kind: EntityKind::EnemyBug,
+		entity_kind: EntityKind::PinkBall,
 		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
 		vel: Vec3::ZERO,
-		sprite: Sprite::BugUp,
-		model: Model::FlatSprite,
+		sprite: Sprite::PinkBall,
+		model: Model::Sprite,
 		anim: Animation::None,
 		atime: 0.0,
 		alpha: 1.0,
@@ -37,16 +37,11 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 
 	if ctx.time >= ent.move_time + ent.move_spd {
 		if let Some(face_dir) = ent.face_dir {
-			// If bug can turn left, turn left
-			if try_move(ent, face_dir.turn_left(), ctx) { }
-			// Otherwise try to move forward
-			else if try_move(ent, face_dir, ctx) { }
-			// If forward is blocked, try to turn right
-			else if try_move(ent, face_dir.turn_right(), ctx) { }
-			// At this point, can't turn left, can't go forward, can't turn right so try to turn around
+			if try_move(ent, face_dir, ctx) { }
 			else if try_move(ent, face_dir.turn_around(), ctx) { }
-			// Trapped! Wait until freed
-			else { }
+			// Blocked! Wait until freed
+			else {
+			}
 		}
 	}
 
@@ -91,13 +86,6 @@ pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {
 		if ent.move_dir.is_none() {
 			obj.vel = Vec3::ZERO;
 		}
-		obj.sprite = match ent.face_dir {
-			Some(Dir::Up) => Sprite::BugUp,
-			Some(Dir::Left) => Sprite::BugLeft,
-			Some(Dir::Down) => Sprite::BugDown,
-			Some(Dir::Right) => Sprite::BugRight,
-			None => Sprite::BugUp,
-		};
 		obj.pos = ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
 		if let Some(move_dir) = ent.move_dir {
 			let t = 1.0 - (ctx.time - ent.move_time) / ent.move_spd;

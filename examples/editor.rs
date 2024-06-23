@@ -1,6 +1,10 @@
-use std::{thread, time};
+use std::{fs, thread, time};
 
 fn main() {
+	let Some(file_path) = std::env::args_os().nth(1) else {
+		panic!("Usage: cargo run --example editor <level>");
+	};
+
 	let mut size = winit::dpi::PhysicalSize::new(800, 600);
 
 	let mut event_loop = winit::event_loop::EventLoop::new();
@@ -36,9 +40,9 @@ fn main() {
 
 	let mut past_now = time::Instant::now();
 
-	let mut game = chipgame::Game::default();
-	game.load_level(include_str!("../data/levels/level7.json"));
-	let mut input = chipgame::Input::default();
+	let mut editor = chipgame::EditorGame::default();
+	let mut input = chipgame::EditorInput::default();
+	editor.load_level(&fs::read_to_string(file_path).unwrap());
 
 	// Main loop
 	let mut quit = false;
@@ -75,6 +79,28 @@ fn main() {
 						input.down = keyboard_input.state == winit::event::ElementState::Pressed;
 					}
 				}
+				winit::event::Event::WindowEvent { event: winit::event::WindowEvent::MouseInput { state, button, .. }, .. } => {
+					fn state_to_bool(state: winit::event::ElementState) -> bool {
+						match state {
+							winit::event::ElementState::Pressed => true,
+							winit::event::ElementState::Released => false,
+						}
+					}
+					match button {
+						winit::event::MouseButton::Left => input.left_click = state_to_bool(state),
+						winit::event::MouseButton::Right => input.right_click = state_to_bool(state),
+						_ => (),
+					}
+				}
+				winit::event::Event::WindowEvent { event: winit::event::WindowEvent::CursorMoved { position, .. }, .. } => {
+					input.mouse.x = position.x as i32;
+					input.mouse.y = position.y as i32;
+					// let x = (input.mouse.x as f32 / 800.0 - 0.5) * 2.0;
+					// let y = (input.mouse.y as f32 / 600.0 - 0.5) * -2.0;
+
+					// game.ndc_mouse.x = position.x as f32 / size.width as f32 * 2.0 - 1.0;
+					// game.ndc_mouse.y = 1.0 - position.y as f32 / size.height as f32 * 2.0;
+				}
 				winit::event::Event::MainEventsCleared => {
 					*control_flow = winit::event_loop::ControlFlow::Exit;
 				}
@@ -82,15 +108,15 @@ fn main() {
 			}
 		});
 
-		game.init(chipgame::Resources {
+		input.screen_size = cvmath::Vec2(size.width as i32, size.height as i32);
+
+		editor.init(chipgame::Resources {
 			tileset,
 			tileset_size: [tex_info.width, tex_info.height].into(),
 			shader,
 			screen_size: [size.width as i32, size.height as i32].into(),
 		});
-		let mut events = Vec::new();
-		game.think(&input, &mut events);
-		game.render(&mut g);
+		editor.render(&mut g, &input);
 
 		// Swap the buffers and wait for the next frame
 		context.swap_buffers().unwrap();

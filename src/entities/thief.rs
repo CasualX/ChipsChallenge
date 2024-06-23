@@ -5,7 +5,7 @@ pub fn create(game: &mut Game, x: i32, y: i32) {
 	let object_h = game.objects.alloc();
 	game.entities.insert(Entity {
 		handle: entity_h,
-		kind: EntityKind::Bomb,
+		kind: EntityKind::Thief,
 		pos: Vec2(x, y),
 		move_dir: None,
 		move_spd: 0.25,
@@ -17,10 +17,10 @@ pub fn create(game: &mut Game, x: i32, y: i32) {
 	game.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
-		entity_kind: EntityKind::Bomb,
+		entity_kind: EntityKind::Thief,
 		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
 		vel: Vec3::ZERO,
-		sprite: Sprite::Bomb,
+		sprite: Sprite::Thief,
 		model: Model::Sprite,
 		anim: Animation::None,
 		atime: 0.0,
@@ -34,7 +34,12 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 	return Lifecycle::KeepAlive;
 }
 
-pub fn interact(_ent: &mut Entity, _ctx: &mut ThinkContext, _ictx: &mut InteractContext) {
+pub fn interact(ent: &mut Entity, ctx: &mut ThinkContext, ictx: &mut InteractContext) {
+	ictx.blocking = false;
+	ctx.pl.inv.flippers = false;
+	ctx.pl.inv.fire_boots = false;
+	ctx.pl.inv.ice_skates = false;
+	ctx.pl.inv.suction_boots = false;
 }
 
 pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {

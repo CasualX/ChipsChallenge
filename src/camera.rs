@@ -2,8 +2,33 @@ use super::*;
 
 #[derive(Default)]
 pub struct Camera {
-	/// Camera position before offset
-	pub eye: Vec3<f32>,
-	/// Camera offset from the player's position
-	pub offset: Vec3<f32>,
+	// Object to follow with the camera
+	pub object_h: Option<ObjectHandle>,
+
+	/// Look at target
+	pub target: Vec3<f32>,
+	/// Eye offset from the target
+	pub eye_offset: Vec3<f32>,
+
+	// Camera matrices
+	pub view_mat: Mat4<f32>,
+	pub proj_mat: Mat4<f32>,
+	pub view_proj_mat: Mat4<f32>,
+}
+
+impl Game {
+	pub fn set_game_camera(&mut self, object_h: ObjectHandle) {
+		let size = self.resources.screen_size;
+
+		let obj = self.objects.get(object_h).unwrap();
+		self.cam.proj_mat = cvmath::Mat4::perspective_fov(cvmath::Deg(45.0), size.x as f32, size.y as f32, 0.1, 1000.0, (cvmath::RH, cvmath::NO));
+		self.cam.view_mat = {
+			self.cam.target = self.cam.target.exp_decay(obj.pos, 15.0, 1.0 / 60.0).with_x(obj.pos.x);
+			let eye = self.cam.target + self.cam.eye_offset;
+			let up = cvmath::Vec3(0.0, 0.0, 1.0);
+			cvmath::Mat4::look_at(eye, obj.pos, up, cvmath::RH)
+		};
+
+		self.cam.view_proj_mat = self.cam.proj_mat * self.cam.view_mat;
+	}
 }
