@@ -1,9 +1,9 @@
 use super::*;
 
-pub fn create(game: &mut Game, x: i32, y: i32, key: KeyColor) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, key: KeyColor) {
+	let entity_h = ctx.entities.alloc();
+	let object_h = ctx.objects.alloc();
+	ctx.entities.insert(Entity {
 		handle: entity_h,
 		kind: match key {
 			KeyColor::Blue => EntityKind::BlueDoor,
@@ -19,7 +19,7 @@ pub fn create(game: &mut Game, x: i32, y: i32, key: KeyColor) {
 		spawner_kind: None,
 		move_time: 0.0,
 	});
-	game.objects.insert(Object {
+	ctx.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
 		entity_kind: match key {

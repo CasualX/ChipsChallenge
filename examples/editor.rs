@@ -42,7 +42,7 @@ fn main() {
 
 	let mut editor = chipgame::EditorGame::default();
 	let mut input = chipgame::EditorInput::default();
-	editor.load_level(&fs::read_to_string(file_path).unwrap());
+	editor.load_level(&fs::read_to_string(&file_path).unwrap());
 
 	// Main loop
 	let mut quit = false;
@@ -65,41 +65,65 @@ fn main() {
 				winit::event::Event::WindowEvent { event: winit::event::WindowEvent::CloseRequested, .. } => {
 					quit = true;
 				}
-				winit::event::Event::WindowEvent { event: winit::event::WindowEvent::KeyboardInput { input: keyboard_input, .. }, .. } => {
-					if keyboard_input.virtual_keycode == Some(winit::event::VirtualKeyCode::Left) {
-						input.left = keyboard_input.state == winit::event::ElementState::Pressed;
-					}
-					if keyboard_input.virtual_keycode == Some(winit::event::VirtualKeyCode::Right) {
-						input.right = keyboard_input.state == winit::event::ElementState::Pressed;
-					}
-					if keyboard_input.virtual_keycode == Some(winit::event::VirtualKeyCode::Up) {
-						input.up = keyboard_input.state == winit::event::ElementState::Pressed;
-					}
-					if keyboard_input.virtual_keycode == Some(winit::event::VirtualKeyCode::Down) {
-						input.down = keyboard_input.state == winit::event::ElementState::Pressed;
+				winit::event::Event::WindowEvent {
+					event: winit::event::WindowEvent::KeyboardInput {
+						input: winit::event::KeyboardInput {
+							virtual_keycode,
+							state,
+							..
+						},
+						..
+					},
+					..
+				} => {
+					match virtual_keycode {
+						Some(winit::event::VirtualKeyCode::Left) => input.left = is_pressed(state),
+						Some(winit::event::VirtualKeyCode::Right) => input.right = is_pressed(state),
+						Some(winit::event::VirtualKeyCode::Up) => input.up = is_pressed(state),
+						Some(winit::event::VirtualKeyCode::Down) => input.down = is_pressed(state),
+						Some(winit::event::VirtualKeyCode::A) if is_pressed(state) => input.chr = Some('A'),
+						Some(winit::event::VirtualKeyCode::B) if is_pressed(state) => input.chr = Some('B'),
+						Some(winit::event::VirtualKeyCode::C) if is_pressed(state) => input.chr = Some('C'),
+						Some(winit::event::VirtualKeyCode::D) if is_pressed(state) => input.chr = Some('D'),
+						Some(winit::event::VirtualKeyCode::E) if is_pressed(state) => input.chr = Some('E'),
+						Some(winit::event::VirtualKeyCode::F) if is_pressed(state) => input.chr = Some('F'),
+						Some(winit::event::VirtualKeyCode::G) if is_pressed(state) => input.chr = Some('G'),
+						Some(winit::event::VirtualKeyCode::H) if is_pressed(state) => input.chr = Some('H'),
+						Some(winit::event::VirtualKeyCode::I) if is_pressed(state) => input.chr = Some('I'),
+						Some(winit::event::VirtualKeyCode::J) if is_pressed(state) => input.chr = Some('J'),
+						Some(winit::event::VirtualKeyCode::K) if is_pressed(state) => input.chr = Some('K'),
+						Some(winit::event::VirtualKeyCode::L) if is_pressed(state) => input.chr = Some('L'),
+						Some(winit::event::VirtualKeyCode::M) if is_pressed(state) => input.chr = Some('M'),
+						Some(winit::event::VirtualKeyCode::N) if is_pressed(state) => input.chr = Some('N'),
+						Some(winit::event::VirtualKeyCode::O) if is_pressed(state) => input.chr = Some('O'),
+						Some(winit::event::VirtualKeyCode::P) if is_pressed(state) => input.chr = Some('P'),
+						Some(winit::event::VirtualKeyCode::Q) if is_pressed(state) => input.chr = Some('Q'),
+						Some(winit::event::VirtualKeyCode::R) if is_pressed(state) => input.chr = Some('R'),
+						Some(winit::event::VirtualKeyCode::S) if is_pressed(state) => input.chr = Some('S'),
+						Some(winit::event::VirtualKeyCode::T) if is_pressed(state) => input.chr = Some('T'),
+						Some(winit::event::VirtualKeyCode::U) if is_pressed(state) => input.chr = Some('U'),
+						Some(winit::event::VirtualKeyCode::V) if is_pressed(state) => input.chr = Some('V'),
+						Some(winit::event::VirtualKeyCode::W) if is_pressed(state) => input.chr = Some('W'),
+						Some(winit::event::VirtualKeyCode::X) if is_pressed(state) => input.chr = Some('X'),
+						Some(winit::event::VirtualKeyCode::Y) if is_pressed(state) => input.chr = Some('Y'),
+						Some(winit::event::VirtualKeyCode::Z) if is_pressed(state) => input.chr = Some('Z'),
+						Some(winit::event::VirtualKeyCode::F5) if is_pressed(state) => {
+							let s = editor.save_level();
+							fs::write(&file_path, s).unwrap();
+						}
+						_ => (),
 					}
 				}
 				winit::event::Event::WindowEvent { event: winit::event::WindowEvent::MouseInput { state, button, .. }, .. } => {
-					fn state_to_bool(state: winit::event::ElementState) -> bool {
-						match state {
-							winit::event::ElementState::Pressed => true,
-							winit::event::ElementState::Released => false,
-						}
-					}
 					match button {
-						winit::event::MouseButton::Left => input.left_click = state_to_bool(state),
-						winit::event::MouseButton::Right => input.right_click = state_to_bool(state),
+						winit::event::MouseButton::Left => input.left_click = is_pressed(state),
+						winit::event::MouseButton::Right => input.right_click = is_pressed(state),
 						_ => (),
 					}
 				}
 				winit::event::Event::WindowEvent { event: winit::event::WindowEvent::CursorMoved { position, .. }, .. } => {
 					input.mouse.x = position.x as i32;
 					input.mouse.y = position.y as i32;
-					// let x = (input.mouse.x as f32 / 800.0 - 0.5) * 2.0;
-					// let y = (input.mouse.y as f32 / 600.0 - 0.5) * -2.0;
-
-					// game.ndc_mouse.x = position.x as f32 / size.width as f32 * 2.0 - 1.0;
-					// game.ndc_mouse.y = 1.0 - position.y as f32 / size.height as f32 * 2.0;
 				}
 				winit::event::Event::MainEventsCleared => {
 					*control_flow = winit::event_loop::ControlFlow::Exit;
@@ -126,5 +150,12 @@ fn main() {
 		let sleep_dur = time::Duration::from_millis(24).saturating_sub(now - past_now);
 		past_now = now;
 		thread::sleep(sleep_dur);
+	}
+}
+
+fn is_pressed(state: winit::event::ElementState) -> bool {
+	match state {
+		winit::event::ElementState::Pressed => true,
+		winit::event::ElementState::Released => false,
 	}
 }

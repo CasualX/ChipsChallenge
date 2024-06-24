@@ -1,38 +1,7 @@
 use super::*;
 
 #[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Tile {
-	Floor,
-	Wall,
-	Hint,
-	Exit,
-	Water,
-	Dirt,
-	Fire,
-	Ice,
-	IceUL,
-	IceUR,
-	IceDL,
-	IceDR,
-	ForceUp,
-	ForceLeft,
-	ForceDown,
-	ForceRight,
-	PanelEast,
-	PanelSouth,
-	PanelSE,
-	GreenSwitch,
-	RedSwitch,
-	BrownSwitch,
-	BlueSwitch,
-	Teleport,
-	BearTrap,
-	OneWay,
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
 pub enum Sprite {
 	#[default]
 	Blank,
@@ -47,6 +16,7 @@ pub enum Sprite {
 	Water,
 	Block,
 	Dirt,
+	Gravel,
 	Fire,
 	Ice,
 	IceUL,
@@ -57,6 +27,8 @@ pub enum Sprite {
 	ForceLeft,
 	ForceDown,
 	ForceRight,
+	ForceRandom,
+	CloneMachine,
 	PanelNorth,
 	PanelWest,
 	PanelSouth,
@@ -85,10 +57,7 @@ pub enum Sprite {
 	RedDoor,
 	GreenDoor,
 	YellowDoor,
-	BlueDoorFloor,
-	RedDoorFloor,
-	GreenDoorFloor,
-	YellowDoorFloor,
+	BlueWall,
 	GreenSwitch,
 	RedSwitch,
 	BrownSwitch,
@@ -97,6 +66,9 @@ pub enum Sprite {
 	OnOffFloor,
 	Bomb,
 	Thief,
+	Teleport,
+	BearTrap,
+	RecessedWall,
 	BugUp,
 	BugLeft,
 	BugDown,
@@ -106,6 +78,7 @@ pub enum Sprite {
 	TankDown,
 	TankRight,
 	PinkBall,
+	FireBall,
 }
 
 impl Sprite {
@@ -123,6 +96,7 @@ impl Sprite {
 			Sprite::Water => Vec2(0, 3),
 			Sprite::Block => Vec2(0, 10),
 			Sprite::Dirt => Vec2(0, 11),
+			Sprite::Gravel => Vec2(2, 13),
 			Sprite::Fire => Vec2(0, 4),
 			Sprite::Ice => Vec2(0, 12),
 			Sprite::IceUL => Vec2(1, 10),
@@ -133,6 +107,8 @@ impl Sprite {
 			Sprite::ForceLeft => Vec2(1, 4),
 			Sprite::ForceDown => Vec2(0, 13),
 			Sprite::ForceRight => Vec2(1, 3),
+			Sprite::ForceRandom => Vec2(3, 2),
+			Sprite::CloneMachine => Vec2(3, 1),
 			Sprite::PanelNorth => Vec2(0, 6),
 			Sprite::PanelWest => Vec2(0, 7),
 			Sprite::PanelSouth => Vec2(0, 8),
@@ -161,10 +137,7 @@ impl Sprite {
 			Sprite::RedDoor => Vec2(1, 7),
 			Sprite::GreenDoor => Vec2(1, 8),
 			Sprite::YellowDoor => Vec2(1, 9),
-			Sprite::BlueDoorFloor => Vec2(4, 6),
-			Sprite::RedDoorFloor => Vec2(4, 7),
-			Sprite::GreenDoorFloor => Vec2(4, 8),
-			Sprite::YellowDoorFloor => Vec2(4, 9),
+			Sprite::BlueWall => Vec2(1, 14),
 			Sprite::GreenSwitch => Vec2(2, 3),
 			Sprite::RedSwitch => Vec2(2, 4),
 			Sprite::BrownSwitch => Vec2(2, 7),
@@ -173,6 +146,9 @@ impl Sprite {
 			Sprite::OnOffFloor => Vec2(2, 6),
 			Sprite::Bomb => Vec2(2, 10),
 			Sprite::Thief => Vec2(2, 1),
+			Sprite::Teleport => Vec2(2, 9),
+			Sprite::BearTrap => Vec2(2, 11),
+			Sprite::RecessedWall => Vec2(2, 14),
 			Sprite::BugUp => Vec2(4, 0),
 			Sprite::BugLeft => Vec2(4, 1),
 			Sprite::BugDown => Vec2(4, 2),
@@ -182,6 +158,7 @@ impl Sprite {
 			Sprite::TankDown => Vec2(4, 14),
 			Sprite::TankRight => Vec2(4, 15),
 			Sprite::PinkBall => Vec2(4, 5),
+			Sprite::FireBall => Vec2(4, 4),
 		}
 	}
 }

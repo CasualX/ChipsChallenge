@@ -1,6 +1,10 @@
-use std::{thread, time};
+use std::{fs, thread, time};
 
 fn main() {
+	let Some(file_path) = std::env::args_os().nth(1) else {
+		panic!("Usage: cargo run --example editor <level>");
+	};
+
 	let mut size = winit::dpi::PhysicalSize::new(800, 600);
 
 	let mut event_loop = winit::event_loop::EventLoop::new();
@@ -37,7 +41,7 @@ fn main() {
 	let mut past_now = time::Instant::now();
 
 	let mut game = chipgame::Game::default();
-	game.load_level(include_str!("../data/levels/level7.json"));
+	game.load_level(&fs::read_to_string(&file_path).unwrap());
 	let mut input = chipgame::Input::default();
 
 	// Main loop

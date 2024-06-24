@@ -47,9 +47,10 @@ impl Object {
 			EntityKind::Fire => entities::fire::update,
 			EntityKind::Thief => entities::thief::update,
 			EntityKind::Spawner => entities::spawner::update,
-			EntityKind::EnemyBug => entities::bug::update,
-			EntityKind::EnemyTank => entities::tank::update,
-			EntityKind::PinkBall => entities::pink_ball::update,
+			EntityKind::Bug => entities::bug::update,
+			EntityKind::Tank => entities::tank::update,
+			EntityKind::PinkBall => entities::pinkball::update,
+			EntityKind::FireBall => entities::fireball::update,
 			EntityKind::Bomb => entities::bomb::update,
 		};
 		update_fn(self, ctx);

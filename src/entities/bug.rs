@@ -1,11 +1,11 @@
 use super::*;
 
-pub fn create(game: &mut Game, x: i32, y: i32, face_dir: Option<Dir>) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
+	let entity_h = ctx.entities.alloc();
+	let object_h = ctx.objects.alloc();
+	ctx.entities.insert(Entity {
 		handle: entity_h,
-		kind: EntityKind::EnemyBug,
+		kind: EntityKind::Bug,
 		pos: Vec2(x, y),
 		move_dir: face_dir,
 		move_spd: 0.25,
@@ -14,10 +14,10 @@ pub fn create(game: &mut Game, x: i32, y: i32, face_dir: Option<Dir>) {
 		spawner_kind: None,
 		move_time: 0.0,
 	});
-	game.objects.insert(Object {
+	ctx.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
-		entity_kind: EntityKind::EnemyBug,
+		entity_kind: EntityKind::Bug,
 		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
 		vel: Vec3::ZERO,
 		sprite: Sprite::BugUp,
@@ -54,23 +54,24 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 }
 
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
-	let new_pos = ent.pos + move_dir.to_vec();
+	if !ctx.field.can_move(ent.pos, move_dir) {
+		return false;
+	}
 
-	if ctx.field.can_move(ent.pos, move_dir) {
-		for ent in ctx.entities.map.values() {
-			if ent.pos != new_pos {
-				continue;
-			}
-			match ent.kind {
-				EntityKind::Gate => return false,
-				EntityKind::Block => return false,
-				EntityKind::Wall if ent.face_dir == Some(Dir::Up) => return false,
-				EntityKind::BlueDoor => return false,
-				EntityKind::RedDoor => return false,
-				EntityKind::GreenDoor => return false,
-				EntityKind::YellowDoor => return false,
-				_ => (),
-			}
+	let new_pos = ent.pos + move_dir.to_vec();
+	for ent in ctx.entities.map.values() {
+		if ent.pos != new_pos {
+			continue;
+		}
+		match ent.kind {
+			EntityKind::Gate => return false,
+			EntityKind::Block => return false,
+			EntityKind::Wall if ent.face_dir == Some(Dir::Up) => return false,
+			EntityKind::BlueDoor => return false,
+			EntityKind::RedDoor => return false,
+			EntityKind::GreenDoor => return false,
+			EntityKind::YellowDoor => return false,
+			_ => (),
 		}
 	}
 

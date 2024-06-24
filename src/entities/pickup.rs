@@ -1,8 +1,8 @@
 use super::*;
 
-pub fn create(game: &mut Game, x: i32, y: i32, item: Pickup) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, item: Pickup) {
+	let entity_h = ctx.entities.alloc();
+	let object_h = ctx.objects.alloc();
 	let kind = match item {
 		Pickup::Chip => EntityKind::Chip,
 		Pickup::BlueKey => EntityKind::BlueKey,
@@ -25,7 +25,7 @@ pub fn create(game: &mut Game, x: i32, y: i32, item: Pickup) {
 		Pickup::IceSkates => Sprite::PowerIceSkates,
 		Pickup::SuctionBoots => Sprite::PowerSuctionBoots,
 	};
-	game.entities.insert(Entity {
+	ctx.entities.insert(Entity {
 		handle: entity_h,
 		kind,
 		pos: Vec2(x, y),
@@ -36,7 +36,7 @@ pub fn create(game: &mut Game, x: i32, y: i32, item: Pickup) {
 		spawner_kind: None,
 		move_time: 0.0,
 	});
-	game.objects.insert(Object {
+	ctx.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
 		entity_kind: kind,

@@ -337,6 +337,7 @@ fn draw_portal(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, spri
 
 fn draw(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Sprite, model: Model, alpha: f32, t: Transform3<f32>) {
 	match model {
+		Model::Empty => (),
 		Model::Floor => draw_floor(cv, pos, sprite, 0.0, 0.0, alpha, t),
 		Model::Wall => draw_wall(cv, pos, 0.0, sprite),
 		Model::ThinWall => draw_wall(cv, pos, 2.0, sprite),
@@ -347,6 +348,11 @@ fn draw(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Spr
 		Model::FloorSprite => draw_floor(cv, pos, sprite, 1.0, 1.0, alpha, t),
 		_ => unimplemented!(),
 	}
+}
+
+pub fn draw_tile(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, i: u8, pos: Vec3<f32>, field: &Field) {
+	let Some(tile) = field.tiles.get(i as usize).cloned() else { return };
+	draw(cv, pos, tile.sprite, tile.model, 1.0, Transform3::IDENTITY);
 }
 
 pub fn field(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, game: &Game, time: f32) {

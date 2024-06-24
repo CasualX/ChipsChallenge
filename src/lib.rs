@@ -15,6 +15,8 @@ mod entity;
 mod camera;
 mod entities;
 mod editor;
+mod terrain;
+mod tile;
 
 use self::sprites::*;
 use self::object::*;
@@ -22,6 +24,8 @@ use self::inventory::*;
 use self::entity::*;
 use self::camera::*;
 pub use self::editor::*;
+pub use self::terrain::*;
+pub use self::tile::*;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Lifecycle {
@@ -100,17 +104,11 @@ const PANEL_E: u8 = 0x2;
 const PANEL_S: u8 = 0x4;
 const PANEL_W: u8 = 0x8;
 
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct TileProps {
-	pub tile: Tile,
-	pub sprite: Sprite,
-	pub model: Model,
-	pub solid: u8,
-}
-
 #[derive(Default)]
 pub struct Field {
+	pub name: String,
+	pub hint: String,
+	pub password: String,
 	pub time_limit: i32,
 	pub chips: i32,
 	pub width: i32,
@@ -134,9 +132,9 @@ impl Field {
 		}
 		self.map[(y * self.width + x) as usize] = tile;
 	}
-	pub fn lookup_tile(&self, tile: Tile) -> Option<u8> {
+	pub fn lookup_tile(&self, tile: Terrain) -> Option<u8> {
 		for (index, props) in self.tiles.iter().enumerate() {
-			if props.tile == tile {
+			if props.terrain == tile {
 				return Some(index as u8);
 			}
 		}
@@ -147,7 +145,7 @@ impl Field {
 
 		// Allow movement if the tile is solid
 		if cur.solid == SOLID_WALL {
-			return false;
+			return true;
 		}
 
 		// Check for panels on the current tile
@@ -313,6 +311,24 @@ pub struct InteractContext {
 	pub push_dir: Dir,
 }
 
+pub struct SpawnContext {
+	pub objects: ObjectMap,
+	pub entities: EntityMap,
+}
+
+impl SpawnContext {
+	pub fn begin(objects: &mut ObjectMap, entities: &mut EntityMap) -> SpawnContext {
+		SpawnContext {
+			objects: mem::replace(objects, Default::default()),
+			entities: mem::replace(entities, Default::default()),
+		}
+	}
+	pub fn end(self, objects: &mut ObjectMap, entities: &mut EntityMap) {
+		mem::forget(mem::replace(objects, self.objects));
+		mem::forget(mem::replace(entities, self.entities));
+	}
+}
+
 pub struct ThinkContext {
 	pub time: f32,
 	pub dt: f32,
@@ -359,6 +375,7 @@ impl Game {
 		_ = mem::replace(&mut self.objects, ctx.objects);
 		_ = mem::replace(&mut self.entities, ctx.entities);
 		events.append(&mut ctx.events);
+		self.cam.object_h = Some(self.pl.object);
 		self.input = input.clone();
 	}
 	pub fn render(&mut self, g: &mut shade::Graphics) {
@@ -375,31 +392,14 @@ impl Game {
 			..Default::default()
 		}).unwrap();
 
-		// Update the camera
-		let projection = cvmath::Mat4::perspective_fov(cvmath::Deg(45.0), size.x as f32, size.y as f32, 0.1, 1000.0, (cvmath::RH, cvmath::NO));
-		let view = {
-			//let wiggle_x = 0.0;//((curtime * 2.0).sin() * 32.0) as f32;
-			//let wiggle_y = 0.0;//((curtime * 1.5).sin() * 32.0) as f32;
-			let pl_obj = self.objects.get(self.pl.object).unwrap();
-			let target = pl_obj.pos;//pl_ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
-			self.cam.target = self.cam.target.exp_decay(target, 15.0, 1.0 / 60.0);
-			self.cam.target.x = target.x;
-			let eye = self.cam.target + self.cam.eye_offset;
-			let up = cvmath::Vec3(0.0, 0.0, 1.0);
-			cvmath::Mat4::look_at(eye, target, up, cvmath::RH)
-		};
-		let transform = projection * view;
-
-		self.cam.view_mat = view;
-		self.cam.proj_mat = projection;
-		self.cam.view_proj_mat = transform;
+		self.set_game_camera();
 
 		let mut cv = shade::d2::Canvas::<render::Vertex, render::Uniform>::new();
 		cv.shader = self.resources.shader;
 		cv.depth_test = Some(shade::DepthTest::Less);
 		cv.viewport = cvmath::Rect::vec(cvmath::Vec2(size.x as i32, size.y as i32));
 		// cv.cull_mode = Some(shade::CullMode::CW);
-		cv.push_uniform(render::Uniform { transform, texture: self.resources.tileset, texture_size: self.resources.tileset_size.map(|c| c as f32).into() });
+		cv.push_uniform(render::Uniform { transform: self.cam.view_proj_mat, texture: self.resources.tileset, texture_size: self.resources.tileset_size.map(|c| c as f32).into() });
 		render::field(&mut cv, self, time);
 		cv.draw(g, shade::Surface::BACK_BUFFER).unwrap();
 

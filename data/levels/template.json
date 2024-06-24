@@ -1,0 +1,20 @@
+{
+	"name": "",
+	"hint": "",
+	"password": "",
+	"time": 0,
+	"chips": 0,
+	"map": {
+		"width": 32,
+		"height": 32,
+		"strings": [],
+		"data": [],
+		"legend": []
+	},
+	"entities": [
+		{
+			"kind": "Player",
+			"pos": [8, 7]
+		}
+	]
+}

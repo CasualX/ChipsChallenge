@@ -26,9 +26,10 @@ pub enum EntityKind {
 	Thief,
 	Fire,
 	Spawner,
-	EnemyBug,
-	EnemyTank,
+	Bug,
+	Tank,
 	PinkBall,
+	FireBall,
 	Bomb,
 }
 
@@ -68,9 +69,10 @@ impl Entity {
 			EntityKind::Fire => entities::fire::think,
 			EntityKind::Thief => entities::thief::think,
 			EntityKind::Spawner => entities::spawner::think,
-			EntityKind::EnemyBug => entities::bug::think,
-			EntityKind::EnemyTank => entities::tank::think,
-			EntityKind::PinkBall => entities::pink_ball::think,
+			EntityKind::Bug => entities::bug::think,
+			EntityKind::Tank => entities::tank::think,
+			EntityKind::PinkBall => entities::pinkball::think,
+			EntityKind::FireBall => entities::fireball::think,
 			EntityKind::Bomb => entities::bomb::think,
 		};
 		think_fn(self, ctx)
@@ -99,9 +101,10 @@ impl Entity {
 			EntityKind::Fire => entities::fire::interact,
 			EntityKind::Thief => entities::thief::interact,
 			EntityKind::Spawner => entities::spawner::interact,
-			EntityKind::EnemyBug => entities::bug::interact,
-			EntityKind::EnemyTank => entities::tank::interact,
-			EntityKind::PinkBall => entities::pink_ball::interact,
+			EntityKind::Bug => entities::bug::interact,
+			EntityKind::Tank => entities::tank::interact,
+			EntityKind::PinkBall => entities::pinkball::interact,
+			EntityKind::FireBall => entities::fireball::interact,
 			EntityKind::Bomb => entities::bomb::interact,
 		};
 		interact_fn(self, ctx, ictx)

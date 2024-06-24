@@ -1,9 +1,9 @@
 use super::*;
 
-pub fn create(game: &mut Game, x: i32, y: i32) {
-	let entity_h = game.entities.alloc();
-	let object_h = game.objects.alloc();
-	game.entities.insert(Entity {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
+	let entity_h = ctx.entities.alloc();
+	let object_h = ctx.objects.alloc();
+	ctx.entities.insert(Entity {
 		handle: entity_h,
 		kind: EntityKind::Block,
 		pos: Vec2(x, y),
@@ -14,7 +14,7 @@ pub fn create(game: &mut Game, x: i32, y: i32) {
 		spawner_kind: None,
 		move_time: 0.0,
 	});
-	game.objects.insert(Object {
+	ctx.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
 		entity_kind: EntityKind::Block,
@@ -35,8 +35,8 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 		if ctx.time >= ent.move_time + ent.move_spd {
 			ent.move_dir = None;
 			ent.face_dir = None;
-			if ctx.field.get_tile(ent.pos).tile == Tile::Water {
-				let dirt = ctx.field.lookup_tile(Tile::Dirt).unwrap();
+			if ctx.field.get_tile(ent.pos).terrain == Terrain::Water {
+				let dirt = ctx.field.lookup_tile(Terrain::Dirt).unwrap();
 				ctx.field.set_tile(ent.pos, dirt);
 				return Lifecycle::Destroy;
 			}
@@ -76,8 +76,8 @@ pub fn interact(ent: &mut Entity, ctx: &mut ThinkContext, ictx: &mut InteractCon
 		return;
 	}
 
-	let dirt = ctx.field.lookup_tile(Tile::Dirt);
-	if dirt.is_none() || ctx.field.get_tile(ent.pos).tile == Tile::Water || is_solid_or_dirt(ent.pos, ictx.push_dir, &ctx.field, &ctx.entities) {
+	let dirt = ctx.field.lookup_tile(Terrain::Dirt);
+	if dirt.is_none() || ctx.field.get_tile(ent.pos).terrain == Terrain::Water || is_solid_or_dirt(ent.pos, ictx.push_dir, &ctx.field, &ctx.entities) {
 		ictx.blocking = true;
 	}
 	else {

@@ -5,10 +5,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 	let object_h = ctx.objects.alloc();
 	ctx.entities.insert(Entity {
 		handle: entity_h,
-		kind: EntityKind::Tank,
+		kind: EntityKind::FireBall,
 		pos: Vec2(x, y),
 		move_dir: None,
-		move_spd: 0.25,
+		move_spd: 0.125,
 		face_dir,
 		frozen: false,
 		spawner_kind: None,
@@ -17,11 +17,11 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 	ctx.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
-		entity_kind: EntityKind::Tank,
+		entity_kind: EntityKind::FireBall,
 		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
 		vel: Vec3::ZERO,
-		sprite: Sprite::BugUp,
-		model: Model::ReallyFlatSprite,
+		sprite: Sprite::FireBall,
+		model: Model::Sprite,
 		anim: Animation::None,
 		atime: 0.0,
 		alpha: 1.0,
@@ -31,13 +31,22 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 }
 
 pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
-	if ctx.time >= ent.move_time + ent.move_spd {
+	if ent.move_dir.is_some() && ctx.time >= ent.move_time + ent.move_spd {
 		ent.move_dir = None;
+
+		let tile = ctx.field.get_tile(ent.pos).terrain;
+		if tile == Terrain::Water {
+			return Lifecycle::Destroy;
+		}
 	}
 
 	if ctx.time >= ent.move_time + ent.move_spd {
 		if let Some(face_dir) = ent.face_dir {
-			try_move(ent, face_dir, ctx);
+			if try_move(ent, face_dir, ctx) { }
+			else if try_move(ent, face_dir.turn_right(), ctx) { }
+			else if try_move(ent, face_dir.turn_left(), ctx) { }
+			else if try_move(ent, face_dir.turn_around(), ctx) { }
+			else { }
 		}
 	}
 
@@ -56,8 +65,8 @@ fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 		}
 		match ent.kind {
 			EntityKind::Gate => return false,
-			EntityKind::Block if ent.face_dir == Some(Dir::Up) => return false,
-			EntityKind::Wall => return false,
+			EntityKind::Block => return false,
+			EntityKind::Wall if ent.face_dir == Some(Dir::Up) => return false,
 			EntityKind::BlueDoor => return false,
 			EntityKind::RedDoor => return false,
 			EntityKind::GreenDoor => return false,
@@ -83,13 +92,6 @@ pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {
 		if ent.move_dir.is_none() {
 			obj.vel = Vec3::ZERO;
 		}
-		obj.sprite = match ent.face_dir {
-			Some(Dir::Up) => Sprite::TankUp,
-			Some(Dir::Left) => Sprite::TankLeft,
-			Some(Dir::Down) => Sprite::TankDown,
-			Some(Dir::Right) => Sprite::TankRight,
-			None => Sprite::TankUp,
-		};
 		obj.pos = ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
 		if let Some(move_dir) = ent.move_dir {
 			let t = 1.0 - (ctx.time - ent.move_time) / ent.move_spd;
