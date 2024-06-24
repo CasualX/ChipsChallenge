@@ -45,21 +45,20 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 
 	// Wait until movement is cleared before accepting new input
 	if ent.move_dir.is_none() {
-		let tile = ctx.field.get_tile(ent.pos).terrain;
+		let terrain = ctx.field.get_terrain(ent.pos);
 
 		// Turn dirt to floor after stepping on it
-		let floor = ctx.field.lookup_tile(Terrain::Floor).unwrap();
-		if matches!(tile, Terrain::Dirt) {
-			ctx.field.set_tile(ent.pos, floor);
+		if matches!(terrain, Terrain::Dirt) {
+			ctx.field.set_terrain(ent.pos, Terrain::Floor);
 		}
 
 		// Freeze the player when they reach the exit
-		if matches!(tile, Terrain::Exit) {
+		if matches!(terrain, Terrain::Exit) {
 			ent.frozen = true;
 		}
 
 		// Set the player's move speed
-		if ctx.pl.inv.suction_boots && matches!(tile, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
+		if ctx.pl.inv.suction_boots && matches!(terrain, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
 			ent.move_spd = 0.125 + 0.125 * 0.5;
 		}
 		else {
@@ -72,14 +71,14 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 
 				// Handle switch tiles
 				for other in ctx.entities.map.values_mut() {
-					if matches!(tile, Terrain::ButtonBlue) {
+					if matches!(terrain, Terrain::BlueButton) {
 						if other.kind == EntityKind::Tank {
 							if let Some(face_dir) = other.face_dir {
 								other.face_dir = Some(face_dir.turn_around());
 							}
 						}
 					}
-					else if matches!(tile, Terrain::ButtonGreen) {
+					else if matches!(terrain, Terrain::GreenButton) {
 						if other.kind == EntityKind::Wall {
 							if let Some(face_dir) = other.face_dir {
 								other.face_dir = Some(face_dir.turn_around());
@@ -90,30 +89,30 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 				}
 
 				// Handle ice physics
-				if !ctx.pl.inv.ice_skates && matches!(tile, Terrain::Ice | Terrain::IceNW | Terrain::IceNE | Terrain::IceSW | Terrain::IceSE) {
+				if !ctx.pl.inv.ice_skates && matches!(terrain, Terrain::Ice | Terrain::IceNW | Terrain::IceNE | Terrain::IceSW | Terrain::IceSE) {
 					let (ice_dir, back_dir) = match orig_dir {
-						Dir::Up => match tile {
+						Dir::Up => match terrain {
 							Terrain::IceNW => (Dir::Right, Dir::Down),
 							Terrain::IceNE => (Dir::Left, Dir::Down),
 							Terrain::IceSE => (Dir::Up, Dir::Left),
 							Terrain::IceSW => (Dir::Up, Dir::Right),
 							_ => (orig_dir, orig_dir.turn_around()),
 						},
-						Dir::Left => match tile {
+						Dir::Left => match terrain {
 							Terrain::IceNW => (Dir::Down, Dir::Right),
 							Terrain::IceNE => (Dir::Left, Dir::Down),
 							Terrain::IceSE => (Dir::Left, Dir::Up),
 							Terrain::IceSW => (Dir::Up, Dir::Right),
 							_ => (orig_dir, orig_dir.turn_around()),
 						},
-						Dir::Down => match tile {
+						Dir::Down => match terrain {
 							Terrain::IceNW => (Dir::Down, Dir::Right),
 							Terrain::IceNE => (Dir::Down, Dir::Left),
-							Terrain::IceSE => (Dir::Down, Dir::Up),
+							Terrain::IceSE => (Dir::Left, Dir::Up),
 							Terrain::IceSW => (Dir::Right, Dir::Up),
 							_ => (orig_dir, orig_dir.turn_around()),
 						},
-						Dir::Right => match tile {
+						Dir::Right => match terrain {
 							Terrain::IceNW => (Dir::Right, Dir::Down),
 							Terrain::IceNE => (Dir::Down, Dir::Left),
 							Terrain::IceSE => (Dir::Up, Dir::Left),
@@ -132,7 +131,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			}
 
 			// Handle force tiles
-			let force_dir = match tile {
+			let force_dir = match terrain {
 				_ if ctx.pl.inv.suction_boots => None,
 				Terrain::ForceW => Some(Dir::Left),
 				Terrain::ForceE => Some(Dir::Right),
@@ -173,7 +172,28 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	let new_pos = ent.pos + move_dir.to_vec();
 
-	let mut success = ctx.field.can_move(ent.pos, move_dir);
+	let terrain = ctx.field.get_terrain(new_pos);
+	if matches!(terrain, Terrain::BlueLock) && ctx.pl.inv.keys[0] > 0 {
+		ctx.field.set_terrain(new_pos, Terrain::Floor);
+		ctx.pl.inv.keys[0] -= 1;
+	}
+	if matches!(terrain, Terrain::RedLock) && ctx.pl.inv.keys[1] > 0 {
+		ctx.field.set_terrain(new_pos, Terrain::Floor);
+		ctx.pl.inv.keys[1] -= 1;
+	}
+	if matches!(terrain, Terrain::GreenLock) && ctx.pl.inv.keys[2] > 0 {
+		ctx.field.set_terrain(new_pos, Terrain::Floor);
+		ctx.pl.inv.keys[2] -= 1;
+	}
+	if matches!(terrain, Terrain::YellowLock) && ctx.pl.inv.keys[3] > 0 {
+		ctx.field.set_terrain(new_pos, Terrain::Floor);
+		ctx.pl.inv.keys[3] -= 1;
+	}
+
+	let flags = CanMoveFlags {
+		gravel: false,
+	};
+	let mut success = ctx.field.can_move(ent.pos, move_dir, &flags);
 	if success {
 		for handle in ctx.entities.map.keys().cloned().collect::<Vec<_>>() {
 			let Some(mut ent) = ctx.entities.remove(handle) else { continue };
@@ -212,9 +232,9 @@ pub fn interact(_ent: &mut Entity, _ctx: &mut ThinkContext, ictx: &mut InteractC
 pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {
 	let Some(ent) = ctx.entities.get(obj.entity_handle) else { return };
 
-	let tile = ctx.field.get_tile(ent.pos).terrain;
+	let terrain = ctx.field.get_terrain(ent.pos);
 
-	if ent.move_dir.is_none() && tile == Terrain::Exit {
+	if ent.move_dir.is_none() && terrain == Terrain::Exit {
 		obj.sprite = Sprite::PlayerCheer;
 	}
 	else if ctx.time > ent.move_time + ent.move_spd + IDLE_TIME {
@@ -230,7 +250,7 @@ pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {
 		}
 	}
 
-	if tile == Terrain::Water {
+	if terrain == Terrain::Water {
 		obj.sprite = match obj.sprite {
 			Sprite::PlayerWalkNeutral => Sprite::PlayerSwimNeutral,
 			Sprite::PlayerWalkUp => Sprite::PlayerSwimUp,

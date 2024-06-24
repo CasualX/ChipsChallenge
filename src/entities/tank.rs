@@ -20,7 +20,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 		entity_kind: EntityKind::Tank,
 		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
 		vel: Vec3::ZERO,
-		sprite: Sprite::BugUp,
+		sprite: Sprite::TankUp,
 		model: Model::ReallyFlatSprite,
 		anim: Animation::None,
 		atime: 0.0,
@@ -45,7 +45,10 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 }
 
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
-	if !ctx.field.can_move(ent.pos, move_dir) {
+	let flags = CanMoveFlags {
+		gravel: false,
+	};
+	if !ctx.field.can_move(ent.pos, move_dir, &flags) {
 		return false;
 	}
 

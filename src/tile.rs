@@ -9,7 +9,7 @@ pub struct TileProps {
 	pub solid: u8,
 }
 
-pub static TILE_PROPS: [TileProps; 42] = [
+pub static TILE_PROPS: [TileProps; 43] = [
 	TileProps { terrain: Terrain::Blank, sprite: Sprite::Blank, model: Model::Empty, solid: SOLID_WALL },
 	TileProps { terrain: Terrain::Floor, sprite: Sprite::Floor, model: Model::Floor, solid: 0 },
 	TileProps { terrain: Terrain::Wall, sprite: Sprite::Wall, model: Model::Wall, solid: SOLID_WALL },
@@ -21,6 +21,7 @@ pub static TILE_PROPS: [TileProps; 42] = [
 	TileProps { terrain: Terrain::Hint, sprite: Sprite::Hint, model: Model::Floor, solid: 0 },
 	TileProps { terrain: Terrain::Exit, sprite: Sprite::Exit1, model: Model::Portal, solid: 0 },
 	TileProps { terrain: Terrain::Water, sprite: Sprite::Water, model: Model::Floor, solid: 0 },
+	TileProps { terrain: Terrain::Fire, sprite: Sprite::Floor, model: Model::Floor, solid: 0 },
 	TileProps { terrain: Terrain::Dirt, sprite: Sprite::Dirt, model: Model::Floor, solid: 0 },
 	TileProps { terrain: Terrain::Gravel, sprite: Sprite::Gravel, model: Model::Floor, solid: 0 },
 	TileProps { terrain: Terrain::Ice, sprite: Sprite::Ice, model: Model::Floor, solid: 0 },
@@ -45,10 +46,10 @@ pub static TILE_PROPS: [TileProps; 42] = [
 	TileProps { terrain: Terrain::InvisWall, sprite: Sprite::Floor, model: Model::Wall, solid: SOLID_WALL },
 	TileProps { terrain: Terrain::BlueWall, sprite: Sprite::BlueWall, model: Model::Wall, solid: SOLID_WALL },
 	TileProps { terrain: Terrain::BlueFake, sprite: Sprite::BlueWall, model: Model::Wall, solid: 0 },
-	TileProps { terrain: Terrain::ButtonGreen, sprite: Sprite::GreenSwitch, model: Model::Floor, solid: 0 },
-	TileProps { terrain: Terrain::ButtonRed, sprite: Sprite::RedSwitch, model: Model::Floor, solid: 0 },
-	TileProps { terrain: Terrain::ButtonBrown, sprite: Sprite::BrownSwitch, model: Model::Floor, solid: 0 },
-	TileProps { terrain: Terrain::ButtonBlue, sprite: Sprite::BlueSwitch, model: Model::Floor, solid: 0 },
+	TileProps { terrain: Terrain::GreenButton, sprite: Sprite::GreenSwitch, model: Model::Floor, solid: 0 },
+	TileProps { terrain: Terrain::RedButton, sprite: Sprite::RedSwitch, model: Model::Floor, solid: 0 },
+	TileProps { terrain: Terrain::BrownButton, sprite: Sprite::BrownSwitch, model: Model::Floor, solid: 0 },
+	TileProps { terrain: Terrain::BlueButton, sprite: Sprite::BlueSwitch, model: Model::Floor, solid: 0 },
 	TileProps { terrain: Terrain::Teleport, sprite: Sprite::Teleport, model: Model::Floor, solid: 0 },
 	TileProps { terrain: Terrain::BearTrap, sprite: Sprite::BearTrap, model: Model::Floor, solid: 0 },
 	TileProps { terrain: Terrain::RecessedWall, sprite: Sprite::RecessedWall, model: Model::Wall, solid: 0 },

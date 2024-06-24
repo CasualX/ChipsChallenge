@@ -94,7 +94,7 @@ impl Sprite {
 			Sprite::Exit3 => Vec2(3, 11),
 			Sprite::Hint => Vec2(2, 15),
 			Sprite::Water => Vec2(0, 3),
-			Sprite::Block => Vec2(0, 10),
+			Sprite::Block => Vec2(1, 0),
 			Sprite::Dirt => Vec2(0, 11),
 			Sprite::Gravel => Vec2(2, 13),
 			Sprite::Fire => Vec2(0, 4),

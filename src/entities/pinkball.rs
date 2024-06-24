@@ -34,9 +34,8 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 	if ent.move_dir.is_some() && ctx.time >= ent.move_time + ent.move_spd {
 		ent.move_dir = None;
 
-		let tile = ctx.field.get_tile(ent.pos).terrain;
-
-		if tile == Terrain::ButtonRed {
+		let terrain = ctx.field.get_terrain(ent.pos);
+		if terrain == Terrain::RedButton {
 			for h in ctx.entities.map.keys().cloned().collect::<Vec<_>>() {
 				if let Some(mut spawner) = ctx.entities.remove(h) {
 					if spawner.kind == EntityKind::Spawner {
@@ -60,7 +59,10 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 }
 
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
-	if !ctx.field.can_move(ent.pos, move_dir) {
+	let flags = CanMoveFlags {
+		gravel: false,
+	};
+	if !ctx.field.can_move(ent.pos, move_dir, &flags) {
 		return false;
 	}
 

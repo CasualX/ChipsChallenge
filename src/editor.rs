@@ -15,12 +15,12 @@ pub struct EditorInput {
 
 #[derive(Copy, Clone)]
 enum Tool {
-	Tile(u8),
+	Terrain(Terrain),
 	Entity(EntityKind),
 }
 impl Default for Tool {
 	fn default() -> Self {
-		Tool::Tile(1)
+		Tool::Terrain(Terrain::Floor)
 	}
 }
 
@@ -44,15 +44,14 @@ impl EditorGame {
 		legend_map.insert(Terrain::Blank, 0); legend.push(Terrain::Blank);
 		legend_map.insert(Terrain::Floor, 1); legend.push(Terrain::Floor);
 		let mut idx = 2;
-		for &x in self.game.field.map.iter() {
-			let tile = &self.game.field.tiles[x as usize];
-			if !legend_map.contains_key(&tile.terrain) {
-				legend_map.insert(tile.terrain, idx);
-				legend.push(tile.terrain);
+		for &terrain in self.game.field.map.iter() {
+			if !legend_map.contains_key(&terrain) {
+				legend_map.insert(terrain, idx);
+				legend.push(terrain);
 				idx += 1;
 			}
 		}
-		let data = self.game.field.map.iter().map(|&x| legend_map[&self.game.field.tiles[x as usize].terrain]).collect();
+		let data = self.game.field.map.iter().map(|&terrain| legend_map[&terrain]).collect();
 
 		let dto = dto::LevelDto {
 			name: self.game.field.name.clone(),
@@ -90,32 +89,32 @@ impl EditorGame {
 		}
 
 		match input.chr {
-			Some('A') => self.tool = Tool::Tile(0),
-			Some('B') => self.tool = Tool::Tile(1),
-			Some('C') => self.tool = Tool::Tile(2),
-			Some('D') => self.tool = Tool::Tile(3),
-			Some('E') => self.tool = Tool::Tile(4),
-			Some('F') => self.tool = Tool::Tile(5),
-			Some('G') => self.tool = Tool::Tile(6),
-			Some('H') => self.tool = Tool::Tile(7),
-			Some('I') => self.tool = Tool::Tile(8),
-			Some('J') => self.tool = Tool::Tile(9),
-			Some('K') => self.tool = Tool::Tile(10),
-			Some('L') => self.tool = Tool::Tile(11),
-			Some('M') => self.tool = Tool::Tile(12),
-			Some('N') => self.tool = Tool::Tile(13),
-			Some('O') => self.tool = Tool::Tile(14),
-			Some('P') => self.tool = Tool::Tile(15),
-			Some('Q') => self.tool = Tool::Tile(16),
-			Some('R') => self.tool = Tool::Tile(17),
-			Some('S') => self.tool = Tool::Tile(18),
-			Some('T') => self.tool = Tool::Tile(19),
-			Some('U') => self.tool = Tool::Tile(20),
-			Some('V') => self.tool = Tool::Tile(21),
-			Some('W') => self.tool = Tool::Tile(22),
-			Some('X') => self.tool = Tool::Tile(23),
-			Some('Y') => self.tool = Tool::Tile(24),
-			Some('Z') => self.tool = Tool::Tile(25),
+			Some('A') => self.tool = Tool::Terrain(Terrain::Blank),
+			Some('B') => self.tool = Tool::Terrain(Terrain::Floor),
+			Some('C') => self.tool = Tool::Terrain(Terrain::Wall),
+			Some('D') => self.tool = Tool::Terrain(Terrain::BlueLock),
+			Some('E') => self.tool = Tool::Terrain(Terrain::RedLock),
+			Some('F') => self.tool = Tool::Terrain(Terrain::GreenLock),
+			Some('G') => self.tool = Tool::Terrain(Terrain::YellowLock),
+			Some('H') => self.tool = Tool::Terrain(Terrain::Hint),
+			Some('I') => self.tool = Tool::Terrain(Terrain::Exit),
+			Some('J') => self.tool = Tool::Terrain(Terrain::Water),
+			Some('K') => self.tool = Tool::Terrain(Terrain::Fire),
+			Some('L') => self.tool = Tool::Terrain(Terrain::Dirt),
+			Some('M') => self.tool = Tool::Terrain(Terrain::Gravel),
+			Some('N') => self.tool = Tool::Terrain(Terrain::Ice),
+			Some('O') => self.tool = Tool::Terrain(Terrain::IceNW),
+			Some('P') => self.tool = Tool::Terrain(Terrain::IceNE),
+			Some('Q') => self.tool = Tool::Terrain(Terrain::IceSW),
+			Some('R') => self.tool = Tool::Terrain(Terrain::IceSE),
+			Some('S') => self.tool = Tool::Terrain(Terrain::ForceN),
+			Some('T') => self.tool = Tool::Terrain(Terrain::ForceW),
+			Some('U') => self.tool = Tool::Terrain(Terrain::ForceS),
+			Some('V') => self.tool = Tool::Terrain(Terrain::ForceE),
+			Some('W') => self.tool = Tool::Terrain(Terrain::ToggleFloor),
+			Some('X') => self.tool = Tool::Terrain(Terrain::ToggleWall),
+			Some('Y') => self.tool = Tool::Terrain(Terrain::Teleport),
+			Some('Z') => self.tool = Tool::Terrain(Terrain::GreenButton),
 			_ => (),
 		}
 
@@ -174,7 +173,7 @@ impl EditorGame {
 			}
 
 			match self.tool {
-				Tool::Tile(index) => {
+				Tool::Terrain(index) => {
 					render::draw_tile(&mut cv, index, p, &self.game.field);
 				}
 				_ => (),
@@ -189,8 +188,8 @@ impl EditorGame {
 
 		if input.left_click {
 			match self.tool {
-				Tool::Tile(index) => {
-					self.game.field.set_tile(pi, index);
+				Tool::Terrain(terrain) => {
+					self.game.field.set_terrain(pi, terrain);
 				}
 				Tool::Entity(kind) => {
 					// let object = Object::new(kind, pi.map(|c| c as f32 * 32.0));

@@ -35,9 +35,8 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 		if ctx.time >= ent.move_time + ent.move_spd {
 			ent.move_dir = None;
 			ent.face_dir = None;
-			if ctx.field.get_tile(ent.pos).terrain == Terrain::Water {
-				let dirt = ctx.field.lookup_tile(Terrain::Dirt).unwrap();
-				ctx.field.set_tile(ent.pos, dirt);
+			if ctx.field.get_terrain(ent.pos) == Terrain::Water {
+				ctx.field.set_terrain(ent.pos, Terrain::Dirt);
 				return Lifecycle::Destroy;
 			}
 		}
@@ -46,7 +45,10 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 }
 
 fn is_solid_or_dirt(pos: Vec2<i32>, move_dir: Dir, field: &Field, entities: &EntityMap) -> bool {
-	if !field.can_move(pos, move_dir) {
+	let flags = CanMoveFlags {
+		gravel: false,
+	};
+	if !field.can_move(pos, move_dir, &flags) {
 		return false;
 	}
 
@@ -76,8 +78,7 @@ pub fn interact(ent: &mut Entity, ctx: &mut ThinkContext, ictx: &mut InteractCon
 		return;
 	}
 
-	let dirt = ctx.field.lookup_tile(Terrain::Dirt);
-	if dirt.is_none() || ctx.field.get_tile(ent.pos).terrain == Terrain::Water || is_solid_or_dirt(ent.pos, ictx.push_dir, &ctx.field, &ctx.entities) {
+	if ctx.field.get_terrain(ent.pos) == Terrain::Water || is_solid_or_dirt(ent.pos, ictx.push_dir, &ctx.field, &ctx.entities) {
 		ictx.blocking = true;
 	}
 	else {

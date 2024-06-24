@@ -350,8 +350,8 @@ fn draw(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Spr
 	}
 }
 
-pub fn draw_tile(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, i: u8, pos: Vec3<f32>, field: &Field) {
-	let Some(tile) = field.tiles.get(i as usize).cloned() else { return };
+pub fn draw_tile(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, terrain: Terrain, pos: Vec3<f32>, field: &Field) {
+	let tile = TILE_PROPS[terrain as usize];
 	draw(cv, pos, tile.sprite, tile.model, 1.0, Transform3::IDENTITY);
 }
 
@@ -363,7 +363,8 @@ pub fn field(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, game
 	cv.blend_mode = shade::BlendMode::Solid;
 	for y in 0..field.height {
 		for x in 0..field.width {
-			let tile = field.get_tile(Vec2(x, y));
+			let tile = field.get_terrain(Vec2(x, y));
+			let tile = TILE_PROPS[tile as usize];
 			if tile.sprite == Sprite::Blank || tile.model == Model::Empty {
 				continue;
 			}

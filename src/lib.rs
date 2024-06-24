@@ -113,35 +113,33 @@ pub struct Field {
 	pub chips: i32,
 	pub width: i32,
 	pub height: i32,
-	pub map: Vec<u8>,
-	pub tiles: Vec<TileProps>,
+	pub map: Vec<Terrain>,
+}
+pub struct CanMoveFlags {
+	pub gravel: bool,
 }
 impl Field {
-	pub fn get_tile(&self, pos: Vec2<i32>) -> TileProps {
+	pub fn get_terrain(&self, pos: Vec2<i32>) -> Terrain {
 		let Vec2 { x, y } = pos;
 		if x < 0 || y < 0 || x >= self.width || y >= self.height {
-			return self.tiles[0];
+			return Terrain::Blank;
 		}
-		let index = self.map[(y * self.width + x) as usize];
-		self.tiles[index as usize]
+		let index = (y * self.width + x) as usize;
+		self.map.get(index).cloned().unwrap_or(Terrain::Blank)
 	}
-	pub fn set_tile(&mut self, pos: Vec2<i32>, tile: u8) {
+	pub fn set_terrain(&mut self, pos: Vec2<i32>, terrain: Terrain) {
 		let Vec2 { x, y } = pos;
 		if x < 0 || y < 0 || x >= self.width || y >= self.height {
 			return;
 		}
-		self.map[(y * self.width + x) as usize] = tile;
-	}
-	pub fn lookup_tile(&self, tile: Terrain) -> Option<u8> {
-		for (index, props) in self.tiles.iter().enumerate() {
-			if props.terrain == tile {
-				return Some(index as u8);
-			}
+		let index = (y * self.width + x) as usize;
+		if let Some(ptr) = self.map.get_mut(index) {
+			*ptr = terrain;
 		}
-		None
 	}
-	pub fn can_move(&self, pos: Vec2<i32>, dir: Dir) -> bool {
-		let cur = self.get_tile(pos);
+	pub fn can_move(&self, pos: Vec2<i32>, dir: Dir, flags: &CanMoveFlags) -> bool {
+		let cur = self.get_terrain(pos);
+		let cur = TILE_PROPS[cur as usize];
 
 		// Allow movement if the tile is solid
 		if cur.solid == SOLID_WALL {
@@ -159,7 +157,8 @@ impl Field {
 			return false;
 		}
 
-		let next = self.get_tile(pos + dir.to_vec());
+		let next = self.get_terrain(pos + dir.to_vec());
+		let next = TILE_PROPS[next as usize];
 
 		// Check the solid flags of the next tile
 		let panel = match dir {
@@ -169,6 +168,10 @@ impl Field {
 			Dir::Right => PANEL_W,
 		};
 		if next.solid & panel != 0 {
+			return false;
+		}
+
+		if flags.gravel && next.terrain == Terrain::Gravel {
 			return false;
 		}
 
