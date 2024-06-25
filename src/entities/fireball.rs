@@ -55,6 +55,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	let flags = CanMoveFlags {
 		gravel: false,
+		fire: true,
 	};
 	if !ctx.field.can_move(ent.pos, move_dir, &flags) {
 		return false;

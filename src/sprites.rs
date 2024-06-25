@@ -79,6 +79,10 @@ pub enum Sprite {
 	TankRight,
 	PinkBall,
 	FireBall,
+	GliderUp,
+	GliderLeft,
+	GliderDown,
+	GliderRight,
 }
 
 impl Sprite {
@@ -159,6 +163,10 @@ impl Sprite {
 			Sprite::TankRight => Vec2(4, 15),
 			Sprite::PinkBall => Vec2(4, 5),
 			Sprite::FireBall => Vec2(4, 4),
+			Sprite::GliderUp => Vec2(5, 0),
+			Sprite::GliderLeft => Vec2(5, 1),
+			Sprite::GliderDown => Vec2(5, 2),
+			Sprite::GliderRight => Vec2(5, 3),
 		}
 	}
 }

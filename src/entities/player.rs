@@ -203,7 +203,8 @@ fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	}
 
 	let flags = CanMoveFlags {
-		gravel: false,
+		gravel: true,
+		fire: true,
 	};
 	let mut success = ctx.field.can_move(ent.pos, move_dir, &flags);
 	if success {

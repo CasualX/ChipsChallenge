@@ -47,6 +47,7 @@ impl Object {
 			EntityKind::Tank => entities::tank::update,
 			EntityKind::PinkBall => entities::pinkball::update,
 			EntityKind::FireBall => entities::fireball::update,
+			EntityKind::Glider => entities::glider::update,
 			EntityKind::Bomb => entities::bomb::update,
 		};
 		update_fn(self, ctx);

@@ -8,7 +8,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 		kind: EntityKind::PinkBall,
 		pos: Vec2(x, y),
 		move_dir: None,
-		move_spd: 0.25,
+		move_spd: 0.125,
 		face_dir,
 		frozen: false,
 		spawner_kind: None,
@@ -61,6 +61,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	let flags = CanMoveFlags {
 		gravel: false,
+		fire: true,
 	};
 	if !ctx.field.can_move(ent.pos, move_dir, &flags) {
 		return false;

@@ -26,6 +26,7 @@ pub enum EntityKind {
 	Tank,
 	PinkBall,
 	FireBall,
+	Glider,
 	Bomb,
 }
 
@@ -65,6 +66,7 @@ impl Entity {
 			EntityKind::Tank => entities::tank::think,
 			EntityKind::PinkBall => entities::pinkball::think,
 			EntityKind::FireBall => entities::fireball::think,
+			EntityKind::Glider => entities::glider::think,
 			EntityKind::Bomb => entities::bomb::think,
 		};
 		think_fn(self, ctx)
@@ -93,6 +95,7 @@ impl Entity {
 			EntityKind::Tank => entities::tank::interact,
 			EntityKind::PinkBall => entities::pinkball::interact,
 			EntityKind::FireBall => entities::fireball::interact,
+			EntityKind::Glider => entities::glider::interact,
 			EntityKind::Bomb => entities::bomb::interact,
 		};
 		interact_fn(self, ctx, ictx)

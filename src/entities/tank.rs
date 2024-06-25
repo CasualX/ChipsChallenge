@@ -8,7 +8,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 		kind: EntityKind::Tank,
 		pos: Vec2(x, y),
 		move_dir: None,
-		move_spd: 0.25,
+		move_spd: 0.125,
 		face_dir,
 		frozen: false,
 		spawner_kind: None,
@@ -20,7 +20,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 		entity_kind: EntityKind::Tank,
 		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
 		vel: Vec3::ZERO,
-		sprite: Sprite::TankUp,
+		sprite: face_dir_to_sprite(face_dir),
 		model: Model::ReallyFlatSprite,
 		anim: Animation::None,
 		atime: 0.0,
@@ -47,6 +47,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	let flags = CanMoveFlags {
 		gravel: false,
+		fire: true,
 	};
 	if !ctx.field.can_move(ent.pos, move_dir, &flags) {
 		return false;
@@ -82,13 +83,7 @@ pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {
 		if ent.move_dir.is_none() {
 			obj.vel = Vec3::ZERO;
 		}
-		obj.sprite = match ent.face_dir {
-			Some(Dir::Up) => Sprite::TankUp,
-			Some(Dir::Left) => Sprite::TankLeft,
-			Some(Dir::Down) => Sprite::TankDown,
-			Some(Dir::Right) => Sprite::TankRight,
-			None => Sprite::TankUp,
-		};
+		obj.sprite = face_dir_to_sprite(ent.face_dir);
 		obj.pos = ent.pos.map(|c| c as f32 * 32.0).vec3(0.0);
 		if let Some(move_dir) = ent.move_dir {
 			let t = 1.0 - (ctx.time - ent.move_time) / ent.move_spd;
@@ -97,5 +92,15 @@ pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {
 	}
 	else {
 		obj.live = false;
+	}
+}
+
+fn face_dir_to_sprite(face_dir: Option<Dir>) -> Sprite {
+	match face_dir {
+		Some(Dir::Up) => Sprite::TankUp,
+		Some(Dir::Left) => Sprite::TankLeft,
+		Some(Dir::Down) => Sprite::TankDown,
+		Some(Dir::Right) => Sprite::TankRight,
+		None => Sprite::TankUp,
 	}
 }

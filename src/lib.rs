@@ -117,6 +117,7 @@ pub struct Field {
 }
 pub struct CanMoveFlags {
 	pub gravel: bool,
+	pub fire: bool,
 }
 impl Field {
 	pub fn get_terrain(&self, pos: Vec2<i32>) -> Terrain {
@@ -171,7 +172,10 @@ impl Field {
 			return false;
 		}
 
-		if flags.gravel && next.terrain == Terrain::Gravel {
+		if !flags.gravel && next.terrain == Terrain::Gravel {
+			return false;
+		}
+		if !flags.fire && next.terrain == Terrain::Fire {
 			return false;
 		}
 

@@ -5,7 +5,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 	let object_h = ctx.objects.alloc();
 	ctx.entities.insert(Entity {
 		handle: entity_h,
-		kind: EntityKind::Bug,
+		kind: EntityKind::Glider,
 		pos: Vec2(x, y),
 		move_dir: face_dir,
 		move_spd: 0.125,
@@ -17,7 +17,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 	ctx.objects.insert(Object {
 		handle: object_h,
 		entity_handle: entity_h,
-		entity_kind: EntityKind::Bug,
+		entity_kind: EntityKind::Glider,
 		pos: Vec3(x as f32 * 32.0, y as f32 * 32.0, 0.0),
 		vel: Vec3::ZERO,
 		sprite: face_dir_to_sprite(face_dir),
@@ -37,13 +37,13 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 
 	if ctx.time >= ent.move_time + ent.move_spd {
 		if let Some(face_dir) = ent.face_dir {
-			// If bug can turn left, turn left
-			if try_move(ent, face_dir.turn_left(), ctx) { }
-			// Otherwise try to move forward
-			else if try_move(ent, face_dir, ctx) { }
-			// If forward is blocked, try to turn right
+			// Try to move forward
+			if try_move(ent, face_dir, ctx) { }
+			// If it can turn left, turn left
+			else if try_move(ent, face_dir.turn_left(), ctx) { }
+			// If it can turn right, turn right
 			else if try_move(ent, face_dir.turn_right(), ctx) { }
-			// At this point, can't turn left, can't go forward, can't turn right so try to turn around
+			// Try to turn around
 			else if try_move(ent, face_dir.turn_around(), ctx) { }
 			// Trapped! Wait until freed
 			else { }
@@ -56,7 +56,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	let flags = CanMoveFlags {
 		gravel: false,
-		fire: false,
+		fire: true,
 	};
 	if !ctx.field.can_move(ent.pos, move_dir, &flags) {
 		return false;
@@ -106,10 +106,10 @@ pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {
 
 fn face_dir_to_sprite(face_dir: Option<Dir>) -> Sprite {
 	match face_dir {
-		Some(Dir::Up) => Sprite::BugUp,
-		Some(Dir::Left) => Sprite::BugLeft,
-		Some(Dir::Down) => Sprite::BugDown,
-		Some(Dir::Right) => Sprite::BugRight,
-		None => Sprite::BugUp,
+		Some(Dir::Up) => Sprite::GliderUp,
+		Some(Dir::Left) => Sprite::GliderLeft,
+		Some(Dir::Down) => Sprite::GliderDown,
+		Some(Dir::Right) => Sprite::GliderRight,
+		None => Sprite::GliderUp,
 	}
 }

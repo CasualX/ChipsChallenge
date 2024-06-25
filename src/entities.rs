@@ -2,7 +2,6 @@ use super::*;
 
 pub mod player;
 pub mod pickup;
-// pub mod door;
 pub mod gate;
 pub mod block;
 pub mod wall;
@@ -14,6 +13,7 @@ pub mod fireball;
 pub mod spawner;
 pub mod fire;
 pub mod thief;
+pub mod glider;
 
 pub fn create(ctx: &mut SpawnContext, e: &dto::EntityDto) {
 	match e.kind {
@@ -37,6 +37,7 @@ pub fn create(ctx: &mut SpawnContext, e: &dto::EntityDto) {
 		EntityKind::Tank => tank::create(ctx, e.pos[0], e.pos[1], e.face_dir),
 		EntityKind::PinkBall => pinkball::create(ctx, e.pos[0], e.pos[1], e.face_dir),
 		EntityKind::FireBall => fireball::create(ctx, e.pos[0], e.pos[1], e.face_dir),
+		EntityKind::Glider => glider::create(ctx, e.pos[0], e.pos[1], e.face_dir),
 		EntityKind::Bomb => bomb::create(ctx, e.pos[0], e.pos[1]),
 	}
 }

@@ -113,8 +113,8 @@ impl EditorGame {
 			Some('V') => self.tool = Tool::Terrain(Terrain::ForceE),
 			Some('W') => self.tool = Tool::Terrain(Terrain::BlueWall),
 			Some('X') => self.tool = Tool::Terrain(Terrain::BlueFake),
-			Some('Y') => self.tool = Tool::Terrain(Terrain::Teleport),
-			Some('Z') => self.tool = Tool::Terrain(Terrain::GreenButton),
+			Some('Y') => self.tool = Tool::Terrain(Terrain::BrownButton),
+			Some('Z') => self.tool = Tool::Terrain(Terrain::BearTrap),
 			_ => (),
 		}
 

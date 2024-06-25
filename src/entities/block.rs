@@ -46,7 +46,8 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 
 fn is_solid_or_dirt(pos: Vec2<i32>, move_dir: Dir, field: &Field, entities: &EntityMap) -> bool {
 	let flags = CanMoveFlags {
-		gravel: false,
+		gravel: true,
+		fire: true,
 	};
 	if !field.can_move(pos, move_dir, &flags) {
 		return true;
