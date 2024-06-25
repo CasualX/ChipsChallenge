@@ -75,10 +75,6 @@ fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 			EntityKind::Gate => return false,
 			EntityKind::Block => return false,
 			EntityKind::Wall if ent.face_dir == Some(Dir::Up) => return false,
-			EntityKind::BlueDoor => return false,
-			EntityKind::RedDoor => return false,
-			EntityKind::GreenDoor => return false,
-			EntityKind::YellowDoor => return false,
 			_ => (),
 		}
 	}

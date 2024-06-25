@@ -49,7 +49,7 @@ fn is_solid_or_dirt(pos: Vec2<i32>, move_dir: Dir, field: &Field, entities: &Ent
 		gravel: false,
 	};
 	if !field.can_move(pos, move_dir, &flags) {
-		return false;
+		return true;
 	}
 
 	let new_pos = pos + move_dir.to_vec();
@@ -58,10 +58,6 @@ fn is_solid_or_dirt(pos: Vec2<i32>, move_dir: Dir, field: &Field, entities: &Ent
 			let solid = match ent.kind {
 				EntityKind::Gate => true,
 				EntityKind::Block => true,
-				EntityKind::BlueDoor => true,
-				EntityKind::RedDoor => true,
-				EntityKind::GreenDoor => true,
-				EntityKind::YellowDoor => true,
 				_ => false,
 			};
 			if solid {

@@ -2,7 +2,7 @@ use super::*;
 
 pub mod player;
 pub mod pickup;
-pub mod door;
+// pub mod door;
 pub mod gate;
 pub mod block;
 pub mod wall;
@@ -30,10 +30,6 @@ pub fn create(ctx: &mut SpawnContext, e: &dto::EntityDto) {
 		EntityKind::RedKey => pickup::create(ctx, e.pos[0], e.pos[1], Pickup::RedKey),
 		EntityKind::GreenKey => pickup::create(ctx, e.pos[0], e.pos[1], Pickup::GreenKey),
 		EntityKind::YellowKey => pickup::create(ctx, e.pos[0], e.pos[1], Pickup::YellowKey),
-		EntityKind::BlueDoor => door::create(ctx, e.pos[0], e.pos[1], KeyColor::Blue),
-		EntityKind::RedDoor => door::create(ctx, e.pos[0], e.pos[1], KeyColor::Red),
-		EntityKind::GreenDoor => door::create(ctx, e.pos[0], e.pos[1], KeyColor::Green),
-		EntityKind::YellowDoor => door::create(ctx, e.pos[0], e.pos[1], KeyColor::Yellow),
 		EntityKind::Fire => fire::create(ctx, e.pos[0], e.pos[1]),
 		EntityKind::Thief => thief::create(ctx, e.pos[0], e.pos[1]),
 		EntityKind::Spawner => spawner::create(ctx, e.pos[0], e.pos[1], e.face_dir, Some(EntityKind::FireBall)),

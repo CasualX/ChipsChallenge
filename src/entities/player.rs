@@ -61,6 +61,9 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 		if ctx.pl.inv.suction_boots && matches!(terrain, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
 			ent.move_spd = 0.125 + 0.125 * 0.5;
 		}
+		else if !ctx.pl.inv.ice_skates && matches!(terrain, Terrain::Ice | Terrain::IceNE | Terrain::IceSE | Terrain::IceNW | Terrain::IceSW) {
+			ent.move_spd = 0.125 * 0.5;
+		}
 		else {
 			ent.move_spd = 0.125;
 		}
@@ -70,20 +73,22 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			if let Some(orig_dir) = orig_dir {
 
 				// Handle switch tiles
-				for other in ctx.entities.map.values_mut() {
 					if matches!(terrain, Terrain::BlueButton) {
+						for other in ctx.entities.map.values_mut() {
 						if other.kind == EntityKind::Tank {
 							if let Some(face_dir) = other.face_dir {
 								other.face_dir = Some(face_dir.turn_around());
 							}
 						}
 					}
-					else if matches!(terrain, Terrain::GreenButton) {
-						if other.kind == EntityKind::Wall {
-							if let Some(face_dir) = other.face_dir {
-								other.face_dir = Some(face_dir.turn_around());
-								other.move_time = ctx.time;
-							}
+				}
+				else if matches!(terrain, Terrain::GreenButton) {
+					for ptr in ctx.field.map.iter_mut() {
+						if *ptr == Terrain::ToggleFloor {
+							*ptr = Terrain::ToggleWall;
+						}
+						else if *ptr == Terrain::ToggleWall {
+							*ptr = Terrain::ToggleFloor;
 						}
 					}
 				}
@@ -139,15 +144,22 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 				Terrain::ForceS => Some(Dir::Down),
 				_ => None,
 			};
-			let first_time_force_dir = ctx.pl.inv.force_dir.is_none();
-			ctx.pl.inv.force_dir = force_dir;
+			let forced_move = ctx.pl.inv.forced_move;
+			ctx.pl.inv.forced_move = false;
+			// let first_time_force_dir = ctx.pl.inv.force_dir.is_none();
+			// ctx.pl.inv.force_dir = None;
 			if let Some(force_dir) = force_dir {
 
 				let override_dir = match force_dir {
-					_ if first_time_force_dir || ent.frozen => None,
+					_ if !forced_move || ent.frozen => None,
 					Dir::Left | Dir::Right => if ctx.input.up { Some(Dir::Up) } else if ctx.input.down { Some(Dir::Down) } else { None },
 					Dir::Up | Dir::Down => if ctx.input.left { Some(Dir::Left) } else if ctx.input.right { Some(Dir::Right) } else { None },
 				};
+
+				if override_dir.is_none() {
+					// ctx.pl.inv.force_dir = Some(force_dir);
+					ctx.pl.inv.forced_move = true;
+				}
 
 				match override_dir {
 					Some(override_dir) if try_move(ent, override_dir, ctx) => true,
