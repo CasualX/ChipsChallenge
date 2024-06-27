@@ -8,7 +8,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) -> 
 		kind: EntityKind::Wall,
 		pos: Vec2(x, y),
 		move_dir: None,
-		move_spd: 0.125,
+		move_spd: BASE_SPD,
 		move_time: 0.0,
 		face_dir,
 		trapped: false,

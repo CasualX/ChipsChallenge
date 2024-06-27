@@ -1,5 +1,7 @@
 use super::*;
 
+pub const BASE_SPD: f32 = 0.1875;
+
 pub mod sprite;
 pub mod player;
 pub mod pickup;

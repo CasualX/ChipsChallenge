@@ -8,7 +8,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) -> EntityHandle {
 		kind: EntityKind::Block,
 		pos: Vec2(x, y),
 		move_dir: None,
-		move_spd: 0.125,
+		move_spd: BASE_SPD,
 		move_time: 0.0,
 		face_dir: None,
 		trapped: false,
@@ -32,14 +32,19 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) -> EntityHandle {
 }
 
 pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) {
+	let terrain = ctx.field.get_terrain(ent.pos);
+
 	if ent.move_dir.is_some() && ctx.time >= ent.move_time + ent.move_spd {
 		if bomb::check(ent, ctx) {
 			return;
 		}
 
-		if ctx.field.get_terrain(ent.pos) == Terrain::Water {
+		if matches!(terrain, Terrain::Water) {
 			ctx.field.set_terrain(ent.pos, Terrain::Dirt);
 			ent.destroy = true;
+		}
+		if matches!(terrain, Terrain::BrownButton) {
+			entities::press_brown_button(ctx, ent.pos);
 		}
 
 		ent.move_dir = None;
@@ -90,6 +95,14 @@ pub fn interact(ent: &mut Entity, ctx: &mut ThinkContext, ictx: &mut InteractCon
 		// 	ictx.remove_entity = true;
 		// 	ctx.field.set_tile(ent.pos, dirt.unwrap());
 		// }
+
+		if bomb::check(ent, ctx) {
+			return;
+		}
+		let terrain = ctx.field.get_terrain(ent.pos);
+		if matches!(terrain, Terrain::BearTrap) {
+			ent.trapped = true;
+		}
 	}
 }
 

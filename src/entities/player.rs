@@ -10,7 +10,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) -> EntityHandle {
 		kind: EntityKind::Player,
 		pos: Vec2(x, y),
 		move_dir: None,
-		move_spd: 0.125,
+		move_spd: BASE_SPD,
 		move_time: 0.0,
 		face_dir: None,
 		trapped: false,
@@ -64,14 +64,14 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) {
 		}
 
 		// Set the player's move speed
-		if ctx.pl.inv.suction_boots && matches!(terrain, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
-			ent.move_spd = 0.125 + 0.125 * 0.5;
+		if !ctx.pl.inv.suction_boots && matches!(terrain, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
+			ent.move_spd = BASE_SPD * 0.5;
 		}
 		else if !ctx.pl.inv.ice_skates && matches!(terrain, Terrain::Ice | Terrain::IceNE | Terrain::IceSE | Terrain::IceNW | Terrain::IceSW) {
-			ent.move_spd = 0.125 * 0.5;
+			ent.move_spd = BASE_SPD * 0.5;
 		}
 		else {
-			ent.move_spd = 0.125;
+			ent.move_spd = BASE_SPD;
 		}
 
 		'end_move: {
@@ -290,6 +290,10 @@ fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	ent.face_dir = Some(move_dir);
 	ent.move_time = ctx.time;
 	if success {
+		if ctx.field.get_terrain(ent.pos) == Terrain::RecessedWall {
+			ctx.field.set_terrain(ent.pos, Terrain::Wall);
+		}
+
 		ent.move_dir = Some(move_dir);
 		ent.pos = new_pos;
 		ctx.pl.inv.steps += 1;

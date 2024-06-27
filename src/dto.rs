@@ -62,10 +62,11 @@ impl Game {
 			if let Some(obj) = self.objects.get(player_h) {
 				self.pl.entity = obj.entity_handle;
 				self.cam.target = obj.pos;
+				self.cam.target_fast = obj.pos;
 			}
 		}
 
-		self.cam.eye_offset = Vec3(0.0, 8.0 * 32.0, 400.0);
+		self.cam.eye_offset = Vec3(0.0, 1.0 * 32.0, 400.0);
 
 		if ld.map.strings.is_empty() {
 			if ld.map.data.is_empty() {
