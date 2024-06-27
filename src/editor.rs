@@ -1,3 +1,5 @@
+use dto::EntityDto;
+
 use super::*;
 
 #[derive(Clone, Default)]
@@ -13,10 +15,11 @@ pub struct EditorInput {
 	pub chr: Option<char>,
 }
 
-#[derive(Copy, Clone)]
+// #[derive(Copy, Clone)]
 enum Tool {
 	Terrain(Terrain),
-	Entity(EntityKind),
+	Entity(dto::EntityDto),
+	Erase,
 }
 impl Default for Tool {
 	fn default() -> Self {
@@ -29,6 +32,8 @@ pub struct EditorGame {
 	game: Game,
 	input: EditorInput,
 	tool: Tool,
+	tile_pos: Option<Vec2<i32>>,
+	conn: Connection,
 }
 
 impl EditorGame {
@@ -71,6 +76,7 @@ impl EditorGame {
 				pos: ent.pos,
 				face_dir: ent.face_dir,
 			}).collect(),
+			connections: self.game.field.conns.clone(),
 		};
 		serde_json::to_string(&dto).unwrap()
 	}
@@ -111,10 +117,13 @@ impl EditorGame {
 			Some('T') => self.tool = Tool::Terrain(Terrain::ForceW),
 			Some('U') => self.tool = Tool::Terrain(Terrain::ForceS),
 			Some('V') => self.tool = Tool::Terrain(Terrain::ForceE),
-			Some('W') => self.tool = Tool::Terrain(Terrain::BlueWall),
-			Some('X') => self.tool = Tool::Terrain(Terrain::BlueFake),
-			Some('Y') => self.tool = Tool::Terrain(Terrain::BrownButton),
-			Some('Z') => self.tool = Tool::Terrain(Terrain::BearTrap),
+			Some('W') => self.tool = Tool::Terrain(Terrain::RedButton),
+			// Some('X') => self.tool = Tool::Terrain(Terrain::CloneMachine),
+			// Some('Y') => self.tool = Tool::Terrain(Terrain::ToggleWall),
+			// Some('Z') => self.tool = Tool::Terrain(Terrain::BearTrap),
+			// Some('X') => self.tool = Tool::Entity(dto::EntityDto { kind: EntityKind::Glider, pos: Vec2::ZERO, face_dir: Some(Dir::Up) }),
+			// Some('Y') => self.tool = Tool::Entity(dto::EntityDto { kind: EntityKind::Tank, pos: Vec2::ZERO, face_dir: Some(Dir::Right) }),
+			// Some('Z') => self.tool = Tool::Entity(dto::EntityDto { kind: EntityKind::FireBoots, pos: Vec2::ZERO, face_dir: None }),
 			_ => (),
 		}
 
@@ -143,19 +152,68 @@ impl EditorGame {
 		let ray = Ray::new(self.game.cam.target + self.game.cam.eye_offset, dir);
 		let plane = Plane::new(Vec3::Z, 0.0);
 		let mut hits = [TraceHit::default(); 2];
-		let n_hits = ray.trace(&plane, &mut hits);
-		// println!("ray: {:?}", ray);
-		// println!("n_hits: {}, hits: {:?}", n_hits, hits[0]);
+		let mut mouse_pos = None;
+		let mut tile_pos = None;
+		if ray.trace(&plane, &mut hits) > 0 {
+			let p = ray.at(hits[0].distance);
+			let pi = p.xy().map(|c| (c / 32.0) as i32);
+			if !self.input.left_click && input.left_click {
+				println!("tile_pos: {}", pi);
+			}
+			mouse_pos = Some(p);
+			tile_pos = Some(pi);
+		}
 
-		let p = ray.at(hits[0].distance);
-		let pi = p.xy().map(|c| (c / 32.0) as i32);
-		if !self.input.left_click && input.left_click {
-			// dbg!(dir_eye);
-			println!("p: {:?}, pi: {}", p, pi);
+		if input.left_click {
+			if self.tile_pos != tile_pos {
+				if let Some(tile_pos) = tile_pos {
+					match &self.tool {
+						&Tool::Terrain(terrain) => {
+							self.game.field.set_terrain(tile_pos, terrain);
+						}
+						Tool::Entity(e) => {
+							let mut ctx = SpawnContext::begin(&mut self.game.objects, &mut self.game.entities);
+							entities::create(&mut ctx, &EntityDto { kind: e.kind, pos: tile_pos, face_dir: e.face_dir });
+							ctx.end(&mut self.game.objects, &mut self.game.entities);
+						}
+						Tool::Erase => {
+							let keys = self.game.entities.map.iter().filter_map(|(&k, v)| if v.pos == tile_pos { Some(k) } else { None }).collect::<Vec<_>>();
+							for k in keys {
+								self.game.entities.map.remove(&k);
+							}
+						}
+					}
+				}
+				self.tile_pos = tile_pos;
+			}
+		}
+		else {
+			self.tile_pos = None;
+		}
+
+		if !self.input.right_click && input.right_click {
+			if let Some(tile_pos) = tile_pos {
+				self.conn.src = tile_pos;
+			}
+		}
+		if self.input.right_click && !input.right_click {
+			if let Some(tile_pos) = tile_pos {
+				self.conn.dest = tile_pos;
+
+				if self.conn.src != self.conn.dest {
+					if let Some(index) = self.game.field.conns.iter().position(|conn| conn == &self.conn) {
+						self.game.field.conns.remove(index);
+					}
+					else {
+						self.game.field.conns.push(self.conn);
+					}
+				}
+			}
 		}
 
 		g.begin().unwrap();
-		{
+
+		if let Some(p) = mouse_pos {
 			let mut cv = shade::d2::Canvas::<render::Vertex, render::Uniform>::new();
 			cv.shader = self.game.resources.shader;
 			cv.depth_test = Some(shade::DepthTest::Less);
@@ -186,17 +244,33 @@ impl EditorGame {
 			cv.draw(g, shade::Surface::BACK_BUFFER).unwrap();
 		}
 
-		if input.left_click {
-			match self.tool {
-				Tool::Terrain(terrain) => {
-					self.game.field.set_terrain(pi, terrain);
-				}
-				Tool::Entity(kind) => {
-					// let object = Object::new(kind, pi.map(|c| c as f32 * 32.0));
-					// self.game.objects.insert(object);
-				}
+		{
+			let mut cv = shade::d2::Canvas::<render::Vertex, render::Uniform>::new();
+			cv.shader = self.game.resources.shader;
+			cv.depth_test = Some(shade::DepthTest::Less);
+			cv.viewport = cvmath::Rect::vec(cvmath::Vec2(input.screen_size.x as i32, input.screen_size.y as i32));
+			cv.push_uniform(render::Uniform { transform: self.game.cam.view_proj_mat, texture: self.game.resources.tileset, texture_size: self.game.resources.tileset_size.map(|c| c as f32).into() });
+
+			for conn in &self.game.field.conns {
+				let mut cv = cv.begin(shade::PrimType::Lines, 4, 3);
+				cv.add_index2(0, 1);
+				cv.add_index2(2, 1);
+				cv.add_index2(3, 1);
+				let src = conn.src.map(|c| c as f32 * 32.0 + 16.0);
+				let dest = conn.dest.map(|c| c as f32 * 32.0 + 16.0);
+				let pth = (dest - src).normalize() * 12.0;
+				let pta = (dest - pth) + pth.ccw() * 0.5;
+				let ptb = (dest - pth) + pth.cw() * 0.5;
+				cv.add_vertices(&[
+					render::Vertex { pos: src.vec3(0.0), uv: Vec2::ZERO, color: [0, 0, 255, 255] },
+					render::Vertex { pos: dest.vec3(0.0), uv: Vec2::ZERO, color: [0, 0, 255, 255] },
+					render::Vertex { pos: pta.vec3(0.0), uv: Vec2::ZERO, color: [0, 0, 255, 255] },
+					render::Vertex { pos: ptb.vec3(0.0), uv: Vec2::ZERO, color: [0, 0, 255, 255] },
+				]);
 			}
+			cv.draw(g, shade::Surface::BACK_BUFFER).unwrap();
 		}
+
 		g.end().unwrap();
 
 		self.input = input.clone();

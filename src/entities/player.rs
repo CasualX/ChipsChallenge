@@ -2,7 +2,7 @@ use super::*;
 
 const IDLE_TIME: f32 = 0.2;
 
-pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) -> EntityHandle {
 	let entity_h = ctx.entities.alloc();
 	let object_h = ctx.objects.alloc();
 	ctx.entities.insert(Entity {
@@ -11,10 +11,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
 		pos: Vec2(x, y),
 		move_dir: None,
 		move_spd: 0.125,
-		face_dir: None,
-		frozen: false,
-		spawner_kind: None,
 		move_time: 0.0,
+		face_dir: None,
+		trapped: false,
+		destroy: false,
 	});
 	ctx.objects.insert(Object {
 		handle: object_h,
@@ -30,9 +30,11 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
 		vis: true,
 		live: true,
 	});
+	entity_h
 }
 
-pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
+pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) {
+	let terrain = ctx.field.get_terrain(ent.pos);
 	let orig_dir = ent.move_dir;
 
 	// Clear movement after a delay
@@ -43,9 +45,13 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 		ent.move_dir = None;
 	}
 
+	// Turn BlueFake to floor when stepping through it
+	if matches!(terrain, Terrain::BlueFake) {
+		ctx.field.set_terrain(ent.pos, Terrain::Floor);
+	}
+
 	// Wait until movement is cleared before accepting new input
 	if ent.move_dir.is_none() {
-		let terrain = ctx.field.get_terrain(ent.pos);
 
 		// Turn dirt to floor after stepping on it
 		if matches!(terrain, Terrain::Dirt) {
@@ -54,7 +60,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 
 		// Freeze the player when they reach the exit
 		if matches!(terrain, Terrain::Exit) {
-			ent.frozen = true;
+			ent.trapped = true;
 		}
 
 		// Set the player's move speed
@@ -73,24 +79,25 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			if let Some(orig_dir) = orig_dir {
 
 				// Handle switch tiles
-					if matches!(terrain, Terrain::BlueButton) {
-						for other in ctx.entities.map.values_mut() {
-						if other.kind == EntityKind::Tank {
-							if let Some(face_dir) = other.face_dir {
-								other.face_dir = Some(face_dir.turn_around());
-							}
-						}
-					}
+				if matches!(terrain, Terrain::GreenButton) {
+					entities::press_green_button(ctx);
 				}
-				else if matches!(terrain, Terrain::GreenButton) {
-					for ptr in ctx.field.map.iter_mut() {
-						if *ptr == Terrain::ToggleFloor {
-							*ptr = Terrain::ToggleWall;
-						}
-						else if *ptr == Terrain::ToggleWall {
-							*ptr = Terrain::ToggleFloor;
-						}
-					}
+				if matches!(terrain, Terrain::RedButton) {
+					entities::press_red_button(ctx, ent.pos);
+				}
+				if matches!(terrain, Terrain::BrownButton) {
+					entities::press_brown_button(ctx, ent.pos);
+				}
+				if matches!(terrain, Terrain::BlueButton) {
+					entities::press_blue_button(ctx);
+				}
+				if matches!(terrain, Terrain::BearTrap) {
+					ent.trapped = true;
+				}
+				if matches!(terrain, Terrain::Teleport) {
+					ent.pos = find_teleport_dest(ent.pos, orig_dir, ctx);
+					try_move(ent, orig_dir, ctx);
+					break 'end_move;
 				}
 
 				// Handle ice physics
@@ -135,6 +142,10 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 				}
 			}
 
+			if ent.trapped {
+				break 'end_move;
+			}
+
 			// Handle force tiles
 			let force_dir = match terrain {
 				_ if ctx.pl.inv.suction_boots => None,
@@ -151,7 +162,7 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			if let Some(force_dir) = force_dir {
 
 				let override_dir = match force_dir {
-					_ if !forced_move || ent.frozen => None,
+					_ if !forced_move || ent.trapped => None,
 					Dir::Left | Dir::Right => if ctx.input.up { Some(Dir::Up) } else if ctx.input.down { Some(Dir::Down) } else { None },
 					Dir::Up | Dir::Down => if ctx.input.left { Some(Dir::Left) } else if ctx.input.right { Some(Dir::Right) } else { None },
 				};
@@ -170,15 +181,54 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			}
 
 			// Handle player input
-			if ent.frozen { }
+			if ent.trapped { }
 			else if ctx.input.left && try_move(ent, Dir::Left, ctx) { }
 			else if ctx.input.right && try_move(ent, Dir::Right, ctx) { }
 			else if ctx.input.up && try_move(ent, Dir::Up, ctx) { }
 			else if ctx.input.down && try_move(ent, Dir::Down, ctx) { }
 		}
 	}
+}
 
-	Lifecycle::KeepAlive
+fn find_teleport_dest(orig_pos: Vec2<i32>, dir: Dir, ctx: &mut ThinkContext) -> Vec2<i32> {
+	let mut pos = orig_pos;
+	loop {
+		let Some(dest) = ctx.field.get_conn_dest(pos) else { break };
+		let flags = CanMoveFlags {
+			gravel: true,
+			fire: true,
+		};
+		pos = dest;
+		if ctx.field.can_move(dest, dir, &flags) {
+			break;
+		}
+		if pos == orig_pos {
+			break;
+		}
+	}
+	return pos;
+}
+
+fn door_anim(objects: &mut ObjectMap, pos: Vec2<i32>, color: KeyColor) {
+	objects.create(Object {
+		handle: Default::default(),
+		entity_handle: Default::default(),
+		entity_kind: EntityKind::Sprite,
+		pos: pos.map(|c| c as f32 * 32.0).vec3(0.0),
+		vel: Vec3(0.0, 0.0, -200.0),
+		sprite: match color {
+			KeyColor::Blue => Sprite::BlueLock,
+			KeyColor::Red => Sprite::RedLock,
+			KeyColor::Green => Sprite::GreenLock,
+			KeyColor::Yellow => Sprite::YellowLock,
+		},
+		model: Model::Wall,
+		anim: Animation::Fall,
+		atime: 0.0,
+		alpha: 1.0,
+		vis: true,
+		live: true,
+	});
 }
 
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
@@ -188,18 +238,28 @@ fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 	if matches!(terrain, Terrain::BlueLock) && ctx.pl.inv.keys[0] > 0 {
 		ctx.field.set_terrain(new_pos, Terrain::Floor);
 		ctx.pl.inv.keys[0] -= 1;
+		door_anim(&mut ctx.objects, new_pos, KeyColor::Blue);
 	}
 	if matches!(terrain, Terrain::RedLock) && ctx.pl.inv.keys[1] > 0 {
 		ctx.field.set_terrain(new_pos, Terrain::Floor);
 		ctx.pl.inv.keys[1] -= 1;
+		door_anim(&mut ctx.objects, new_pos, KeyColor::Red);
 	}
 	if matches!(terrain, Terrain::GreenLock) && ctx.pl.inv.keys[2] > 0 {
 		ctx.field.set_terrain(new_pos, Terrain::Floor);
-		ctx.pl.inv.keys[2] -= 1;
+		// ctx.pl.inv.keys[2] -= 1; // Green keys are infinite
+		door_anim(&mut ctx.objects, new_pos, KeyColor::Green);
 	}
 	if matches!(terrain, Terrain::YellowLock) && ctx.pl.inv.keys[3] > 0 {
 		ctx.field.set_terrain(new_pos, Terrain::Floor);
 		ctx.pl.inv.keys[3] -= 1;
+		door_anim(&mut ctx.objects, new_pos, KeyColor::Yellow);
+	}
+	if matches!(terrain, Terrain::BlueWall) {
+		ctx.field.set_terrain(new_pos, Terrain::Wall);
+	}
+	if matches!(terrain, Terrain::HiddenWall) {
+		ctx.field.set_terrain(new_pos, Terrain::Wall);
 	}
 
 	let flags = CanMoveFlags {

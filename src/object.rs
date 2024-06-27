@@ -27,9 +27,10 @@ impl Object {
 		}
 
 		let update_fn = match self.entity_kind {
+			EntityKind::Sprite => entities::sprite::update,
 			EntityKind::Player => entities::player::update,
 			EntityKind::Chip => entities::pickup::update,
-			EntityKind::Gate => entities::gate::update,
+			EntityKind::Socket => entities::socket::update,
 			EntityKind::Block => entities::block::update,
 			EntityKind::Wall => entities::wall::update,
 			EntityKind::Flippers => entities::pickup::update,
@@ -42,7 +43,6 @@ impl Object {
 			EntityKind::YellowKey => entities::pickup::update,
 			EntityKind::Fire => entities::fire::update,
 			EntityKind::Thief => entities::thief::update,
-			EntityKind::Spawner => entities::spawner::update,
 			EntityKind::Bug => entities::bug::update,
 			EntityKind::Tank => entities::tank::update,
 			EntityKind::PinkBall => entities::pinkball::update,

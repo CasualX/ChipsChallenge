@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) -> EntityHandle {
 	let entity_h = ctx.entities.alloc();
 	let object_h = ctx.objects.alloc();
 	ctx.entities.insert(Entity {
@@ -9,10 +9,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
 		pos: Vec2(x, y),
 		move_dir: None,
 		move_spd: 0.125,
-		face_dir: None,
-		frozen: false,
-		spawner_kind: None,
 		move_time: 0.0,
+		face_dir: None,
+		trapped: false,
+		destroy: false,
 	});
 	ctx.objects.insert(Object {
 		handle: object_h,
@@ -28,20 +28,22 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
 		vis: true,
 		live: true,
 	});
+	entity_h
 }
 
-pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
-	if let Some(_) = ent.move_dir {
-		if ctx.time >= ent.move_time + ent.move_spd {
-			ent.move_dir = None;
-			ent.face_dir = None;
-			if ctx.field.get_terrain(ent.pos) == Terrain::Water {
-				ctx.field.set_terrain(ent.pos, Terrain::Dirt);
-				return Lifecycle::Destroy;
-			}
+pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) {
+	if ent.move_dir.is_some() && ctx.time >= ent.move_time + ent.move_spd {
+		if bomb::check(ent, ctx) {
+			return;
 		}
+
+		if ctx.field.get_terrain(ent.pos) == Terrain::Water {
+			ctx.field.set_terrain(ent.pos, Terrain::Dirt);
+			ent.destroy = true;
+		}
+
+		ent.move_dir = None;
 	}
-	return Lifecycle::KeepAlive;
 }
 
 fn is_solid_or_dirt(pos: Vec2<i32>, move_dir: Dir, field: &Field, entities: &EntityMap) -> bool {
@@ -57,7 +59,7 @@ fn is_solid_or_dirt(pos: Vec2<i32>, move_dir: Dir, field: &Field, entities: &Ent
 	for ent in entities.map.values() {
 		if ent.pos == new_pos {
 			let solid = match ent.kind {
-				EntityKind::Gate => true,
+				EntityKind::Socket => true,
 				EntityKind::Block => true,
 				_ => false,
 			};
@@ -70,7 +72,7 @@ fn is_solid_or_dirt(pos: Vec2<i32>, move_dir: Dir, field: &Field, entities: &Ent
 }
 
 pub fn interact(ent: &mut Entity, ctx: &mut ThinkContext, ictx: &mut InteractContext) {
-	if ent.frozen {
+	if ent.trapped {
 		ictx.blocking = true;
 		return;
 	}

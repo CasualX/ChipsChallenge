@@ -104,6 +104,18 @@ const PANEL_E: u8 = 0x2;
 const PANEL_S: u8 = 0x4;
 const PANEL_W: u8 = 0x8;
 
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+pub struct Connection {
+	pub src: Vec2<i32>,
+	pub dest: Vec2<i32>,
+}
+impl Connection {
+	pub fn reverse(&self) -> Connection {
+		Connection { src: self.dest, dest: self.src }
+	}
+}
+
 #[derive(Default)]
 pub struct Field {
 	pub name: String,
@@ -114,6 +126,7 @@ pub struct Field {
 	pub width: i32,
 	pub height: i32,
 	pub map: Vec<Terrain>,
+	pub conns: Vec<Connection>,
 }
 pub struct CanMoveFlags {
 	pub gravel: bool,
@@ -137,6 +150,14 @@ impl Field {
 		if let Some(ptr) = self.map.get_mut(index) {
 			*ptr = terrain;
 		}
+	}
+	pub fn get_conn_dest(&self, pos: Vec2<i32>) -> Option<Vec2<i32>> {
+		for conn in &self.conns {
+			if conn.src == pos {
+				return Some(conn.dest);
+			}
+		}
+		return None;
 	}
 	pub fn can_move(&self, pos: Vec2<i32>, dir: Dir, flags: &CanMoveFlags) -> bool {
 		let cur = self.get_terrain(pos);
@@ -367,10 +388,10 @@ impl Game {
 		for handle in ctx.entities.map.keys().cloned().collect::<Vec<_>>() {
 			// ctx.entities.with(handle, |ent| ent.think(&mut ctx));
 			let Some(mut ent) = ctx.entities.remove(handle) else { continue };
-			if matches!(ent.think(&mut ctx), Lifecycle::KeepAlive) {
-				ctx.entities.insert(ent);
-			}
+			ent.think(&mut ctx);
+			ctx.entities.insert(ent);
 		}
+		ctx.entities.map.retain(|_, ent| !ent.destroy);
 		self.pl = ctx.pl.clone();
 		for handle in ctx.objects.map.keys().cloned().collect::<Vec<_>>() {
 			let Some(mut obj) = ctx.objects.remove(handle) else { continue };

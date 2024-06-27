@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) -> EntityHandle {
 	let entity_h = ctx.entities.alloc();
 	let object_h = ctx.objects.alloc();
 	ctx.entities.insert(Entity {
@@ -9,10 +9,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
 		pos: Vec2(x, y),
 		move_dir: None,
 		move_spd: 0.25,
-		face_dir: None,
-		frozen: false,
-		spawner_kind: None,
 		move_time: 0.0,
+		face_dir: None,
+		trapped: false,
+		destroy: false,
 	});
 	ctx.objects.insert(Object {
 		handle: object_h,
@@ -28,13 +28,27 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
 		vis: true,
 		live: true,
 	});
+	entity_h
 }
 
-pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
-	return Lifecycle::KeepAlive;
+pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) {
 }
 
 pub fn interact(_ent: &mut Entity, _ctx: &mut ThinkContext, _ictx: &mut InteractContext) {
+}
+
+pub fn check(ent: &mut Entity, ctx: &mut ThinkContext) -> bool {
+	for other_ent in ctx.entities.map.values_mut() {
+		if other_ent.pos != ent.pos {
+			continue;
+		}
+		if matches!(other_ent.kind, EntityKind::Bomb) {
+			other_ent.destroy = true;
+			ent.destroy = true;
+			return true;
+		}
+	}
+	return false;
 }
 
 pub fn update(obj: &mut Object, ctx: &mut ThinkContext) {

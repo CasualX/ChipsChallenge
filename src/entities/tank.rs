@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) -> EntityHandle {
 	let entity_h = ctx.entities.alloc();
 	let object_h = ctx.objects.alloc();
 	ctx.entities.insert(Entity {
@@ -9,10 +9,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 		pos: Vec2(x, y),
 		move_dir: None,
 		move_spd: 0.125,
-		face_dir,
-		frozen: false,
-		spawner_kind: None,
 		move_time: 0.0,
+		face_dir,
+		trapped: false,
+		destroy: false,
 	});
 	ctx.objects.insert(Object {
 		handle: object_h,
@@ -28,9 +28,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 		vis: true,
 		live: true,
 	});
+	entity_h
 }
 
-pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
+pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) {
 	if ctx.time >= ent.move_time + ent.move_spd {
 		ent.move_dir = None;
 	}
@@ -40,8 +41,6 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			try_move(ent, face_dir, ctx);
 		}
 	}
-
-	return Lifecycle::KeepAlive;
 }
 
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
@@ -59,7 +58,7 @@ fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 			continue;
 		}
 		match ent.kind {
-			EntityKind::Gate => return false,
+			EntityKind::Socket => return false,
 			EntityKind::Block if ent.face_dir == Some(Dir::Up) => return false,
 			EntityKind::Wall => return false,
 			_ => (),

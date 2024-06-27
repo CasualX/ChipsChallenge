@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) -> EntityHandle {
 	let entity_h = ctx.entities.alloc();
 	let object_h = ctx.objects.alloc();
 	ctx.entities.insert(Entity {
@@ -9,10 +9,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 		pos: Vec2(x, y),
 		move_dir: face_dir,
 		move_spd: 0.125,
-		face_dir,
-		frozen: false,
-		spawner_kind: None,
 		move_time: 0.0,
+		face_dir,
+		trapped: false,
+		destroy: false,
 	});
 	ctx.objects.insert(Object {
 		handle: object_h,
@@ -28,14 +28,25 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>) {
 		vis: true,
 		live: true,
 	});
+	entity_h
 }
 
-pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
-	if ctx.time >= ent.move_time + ent.move_spd {
+pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) {
+	if ent.move_dir.is_some() && ctx.time >= ent.move_time + ent.move_spd {
+		// Check for traps
+		let terrain = ctx.field.get_terrain(ent.pos);
+		if matches!(terrain, Terrain::BearTrap) {
+			ent.trapped = true;
+		}
+
+		if bomb::check(ent, ctx) {
+			return;
+		}
+
 		ent.move_dir = None;
 	}
 
-	if ctx.time >= ent.move_time + ent.move_spd {
+	if !ent.trapped && ctx.time >= ent.move_time + ent.move_spd {
 		if let Some(face_dir) = ent.face_dir {
 			// Try to move forward
 			if try_move(ent, face_dir, ctx) { }
@@ -49,8 +60,6 @@ pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
 			else { }
 		}
 	}
-
-	return Lifecycle::KeepAlive;
 }
 
 fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
@@ -68,7 +77,7 @@ fn try_move(ent: &mut Entity, move_dir: Dir, ctx: &mut ThinkContext) -> bool {
 			continue;
 		}
 		match ent.kind {
-			EntityKind::Gate => return false,
+			EntityKind::Socket => return false,
 			EntityKind::Block => return false,
 			EntityKind::Wall if ent.face_dir == Some(Dir::Up) => return false,
 			_ => (),

@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
+pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) -> EntityHandle {
 	let entity_h = ctx.entities.alloc();
 	let object_h = ctx.objects.alloc();
 	ctx.entities.insert(Entity {
@@ -9,10 +9,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
 		pos: Vec2(x, y),
 		move_dir: None,
 		move_spd: 0.25,
-		face_dir: None,
-		frozen: false,
-		spawner_kind: None,
 		move_time: 0.0,
+		face_dir: None,
+		trapped: false,
+		destroy: false,
 	});
 	ctx.objects.insert(Object {
 		handle: object_h,
@@ -28,10 +28,10 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32) {
 		vis: true,
 		live: true,
 	});
+	entity_h
 }
 
-pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) -> Lifecycle {
-	return Lifecycle::KeepAlive;
+pub fn think(ent: &mut Entity, ctx: &mut ThinkContext) {
 }
 
 pub fn interact(ent: &mut Entity, ctx: &mut ThinkContext, ictx: &mut InteractContext) {

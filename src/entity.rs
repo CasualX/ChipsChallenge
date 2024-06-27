@@ -6,9 +6,10 @@ pub struct EntityHandle(pub u32);
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum EntityKind {
+	Sprite,
 	Player,
 	Chip,
-	Gate,
+	Socket,
 	Block,
 	Wall,
 	Flippers,
@@ -21,7 +22,6 @@ pub enum EntityKind {
 	YellowKey,
 	Thief,
 	Fire,
-	Spawner,
 	Bug,
 	Tank,
 	PinkBall,
@@ -37,18 +37,19 @@ pub struct Entity {
 	pub pos: Vec2<i32>,
 	pub move_dir: Option<Dir>,
 	pub move_spd: f32,
-	pub face_dir: Option<Dir>,
-	pub frozen: bool,
-	pub spawner_kind: Option<EntityKind>,
 	pub move_time: f32,
+	pub face_dir: Option<Dir>,
+	pub trapped: bool,
+	pub destroy: bool,
 }
 
 impl Entity {
-	pub fn think(&mut self, ctx: &mut ThinkContext) -> Lifecycle {
+	pub fn think(&mut self, ctx: &mut ThinkContext) {
 		let think_fn = match self.kind {
+			EntityKind::Sprite => entities::sprite::think,
 			EntityKind::Player => entities::player::think,
 			EntityKind::Chip => entities::pickup::think,
-			EntityKind::Gate => entities::gate::think,
+			EntityKind::Socket => entities::socket::think,
 			EntityKind::Block => entities::block::think,
 			EntityKind::Wall => entities::wall::think,
 			EntityKind::Flippers => entities::pickup::think,
@@ -61,7 +62,6 @@ impl Entity {
 			EntityKind::YellowKey => entities::pickup::think,
 			EntityKind::Fire => entities::fire::think,
 			EntityKind::Thief => entities::thief::think,
-			EntityKind::Spawner => entities::spawner::think,
 			EntityKind::Bug => entities::bug::think,
 			EntityKind::Tank => entities::tank::think,
 			EntityKind::PinkBall => entities::pinkball::think,
@@ -75,9 +75,10 @@ impl Entity {
 	/// Player interacts with an entity by moving into it.
 	pub fn interact(&mut self, ctx: &mut ThinkContext, ictx: &mut InteractContext) {
 		let interact_fn = match self.kind {
+			EntityKind::Sprite => entities::sprite::interact,
 			EntityKind::Player => entities::player::interact,
 			EntityKind::Chip => entities::pickup::interact,
-			EntityKind::Gate => entities::gate::interact,
+			EntityKind::Socket => entities::socket::interact,
 			EntityKind::Block => entities::block::interact,
 			EntityKind::Wall => entities::wall::interact,
 			EntityKind::Flippers => entities::pickup::interact,
@@ -90,7 +91,6 @@ impl Entity {
 			EntityKind::YellowKey => entities::pickup::interact,
 			EntityKind::Fire => entities::fire::interact,
 			EntityKind::Thief => entities::thief::interact,
-			EntityKind::Spawner => entities::spawner::interact,
 			EntityKind::Bug => entities::bug::interact,
 			EntityKind::Tank => entities::tank::interact,
 			EntityKind::PinkBall => entities::pinkball::interact,

@@ -31,6 +31,7 @@ pub struct LevelDto {
 	pub chips: i32,
 	pub map: MapDto,
 	pub entities: Vec<EntityDto>,
+	pub connections: Vec<Connection>,
 }
 
 impl Game {
@@ -47,6 +48,7 @@ impl Game {
 		self.field.width = ld.map.width;
 		self.field.height = ld.map.height;
 		self.field.map.clear();
+		self.field.conns = ld.connections;
 		self.objects.map.clear();
 
 		for e in &ld.entities {
@@ -124,7 +126,7 @@ impl Game {
 						}
 						b'=' => {
 							let mut ctx = SpawnContext::begin(&mut self.objects, &mut self.entities);
-							entities::gate::create(&mut ctx, x, y);
+							entities::socket::create(&mut ctx, x, y);
 							ctx.end(&mut self.objects, &mut self.entities);
 							Terrain::Floor
 						}

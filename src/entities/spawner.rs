@@ -11,6 +11,7 @@ pub fn create(ctx: &mut SpawnContext, x: i32, y: i32, face_dir: Option<Dir>, spa
 		move_spd: 0.25,
 		face_dir,
 		frozen: false,
+		trapped: false,
 		spawner_kind,
 		move_time: 0.0,
 	});
