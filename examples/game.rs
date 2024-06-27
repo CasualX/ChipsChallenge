@@ -40,9 +40,9 @@ fn main() {
 
 	let mut past_now = time::Instant::now();
 
-	let mut game = chipgame::Game::default();
-	game.load_level(&fs::read_to_string(&file_path).unwrap());
-	let mut input = chipgame::Input::default();
+	let mut state = chipgame::visual::VisualState::default();
+	state.load_level(&fs::read_to_string(&file_path).unwrap());
+	let mut input = chipgame::core::Input::default();
 
 	// Main loop
 	let mut quit = false;
@@ -86,15 +86,14 @@ fn main() {
 			}
 		});
 
-		game.init(chipgame::Resources {
+		state.resources = chipgame::visual::Resources {
 			tileset,
 			tileset_size: [tex_info.width, tex_info.height].into(),
 			shader,
 			screen_size: [size.width as i32, size.height as i32].into(),
-		});
-		let mut events = Vec::new();
-		game.think(&input, &mut events);
-		game.render(&mut g);
+		};
+		state.update(&input);
+		state.draw(&mut g);
 
 		// Swap the buffers and wait for the next frame
 		context.swap_buffers().unwrap();
