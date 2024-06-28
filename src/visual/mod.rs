@@ -4,6 +4,7 @@ use crate::core;
 
 mod camera;
 mod model;
+mod handlers;
 mod object;
 mod objectmap;
 mod sprite;
@@ -14,6 +15,7 @@ mod tile;
 
 pub use self::camera::*;
 pub use self::model::*;
+pub use self::handlers::*;
 pub use self::object::*;
 pub use self::objectmap::*;
 pub use self::sprite::*;

@@ -15,6 +15,17 @@ impl VisualState {
 		self.game.load(json);
 		self.sync(&self.game.events.clone());
 		self.camera.eye_offset = Vec3::new(0.0, 2.0 * 32.0, 400.0);
+
+		for y in 0..self.game.field.height {
+			for x in 0..self.game.field.width {
+				let index = (y * self.game.field.width + x) as usize;
+				let terrain = self.game.field.terrain[index];
+				match terrain {
+					core::Terrain::Fire => create_fire(self, Vec3::new(x as f32, y as f32, 0.0)),
+					_ => {}
+				}
+			}
+		}
 	}
 	pub fn update(&mut self, input: &core::Input) {
 		self.game.tick(input);
@@ -22,11 +33,16 @@ impl VisualState {
 	}
 	fn sync(&mut self, events: &Vec<core::GameEvent>) {
 		for ev in events {
+			println!("Event: {:?}", ev);
 			match ev {
 				&core::GameEvent::EntityCreated { handle } => entity_created(self, handle),
-				&core::GameEvent::EntityRemoved { handle } => entity_destroyed(self, handle),
-				&core::GameEvent::EntityMoved { handle } => entity_moved(self, handle),
-				&core::GameEvent::ItemPickup { handle, kind } => item_pickup(self, handle),
+				&core::GameEvent::EntityRemoved { handle } => entity_removed(self, handle),
+				&core::GameEvent::EntityStep { handle } => entity_step(self, handle),
+				&core::GameEvent::EntityFaceDir { handle } => entity_face_dir(self, handle),
+				&core::GameEvent::PlayerActionChanged { handle } => entity_face_dir(self, handle),
+				&core::GameEvent::ItemPickup { handle, .. } => item_pickup(self, handle),
+				&core::GameEvent::LockRemoved { pos, key } => lock_removed(self, pos, key),
+				&core::GameEvent::GameWin => game_win(self),
 				_ => {}
 			}
 		}

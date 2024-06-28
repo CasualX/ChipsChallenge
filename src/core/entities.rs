@@ -1,6 +1,6 @@
 use super::*;
 
-pub const BASE_SPD: i32 = 20;
+pub const BASE_SPD: Time = 12;
 
 pub mod player;
 pub mod pickup;
@@ -50,10 +50,11 @@ pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
 
 pub fn press_green_button(s: &mut GameState) {
 	for ptr in s.field.terrain.iter_mut() {
-		if *ptr == Terrain::ToggleFloor {
+		let terrain = *ptr;
+		if matches!(terrain, Terrain::ToggleFloor) {
 			*ptr = Terrain::ToggleWall;
 		}
-		else if *ptr == Terrain::ToggleWall {
+		else if matches!(terrain, Terrain::ToggleWall) {
 			*ptr = Terrain::ToggleFloor;
 		}
 	}
@@ -69,7 +70,7 @@ pub fn press_red_button(s: &mut GameState, pos: Vec2i) {
 		};
 		let h = create(s, &ent_dto);
 		if let Some(ent) = s.ents.get_mut(h) {
-			ent.move_dir = ent_dto.face_dir;
+			ent.step_dir = ent_dto.face_dir;
 		}
 	}
 }
@@ -85,7 +86,7 @@ pub fn press_brown_button(s: &mut GameState, pos: Vec2i) {
 
 pub fn press_blue_button(s: &mut GameState) {
 	for other in s.ents.map.values_mut() {
-		if other.kind == EntityKind::Tank {
+		if matches!(other.kind, EntityKind::Tank) {
 			if let Some(face_dir) = other.face_dir {
 				other.face_dir = Some(face_dir.turn_around());
 			}

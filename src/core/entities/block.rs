@@ -7,20 +7,20 @@ pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
 		handle,
 		kind: data.kind,
 		pos: data.pos,
-		move_dir: None,
-		move_spd: BASE_SPD,
-		move_time: 0,
 		face_dir: data.face_dir,
+		step_dir: None,
+		step_spd: BASE_SPD,
+		step_time: 0,
 		trapped: false,
 		remove: false,
 	});
 	return handle;
 }
 
-fn think(ent: &mut Entity, s: &mut GameState) {
+fn think(s: &mut GameState, ent: &mut Entity) {
 	let terrain = s.field.get_terrain(ent.pos);
 
-	if ent.move_dir.is_some() && s.time >= ent.move_time + ent.move_spd {
+	if ent.step_dir.is_some() && s.time >= ent.step_time + ent.step_spd {
 		if bomb::check(ent, s) {
 			return;
 		}
@@ -33,7 +33,7 @@ fn think(ent: &mut Entity, s: &mut GameState) {
 			entities::press_brown_button(s, ent.pos);
 		}
 
-		ent.move_dir = None;
+		ent.step_dir = None;
 	}
 }
 
@@ -62,25 +62,24 @@ fn is_solid_or_dirt(pos: Vec2i, move_dir: Dir, field: &Field, entities: &EntityM
 	false
 }
 
-fn interact(ent: &mut Entity, s: &mut GameState, ictx: &mut InteractContext) {
+fn interact(s: &mut GameState, ent: &mut Entity, ictx: &mut InteractContext) {
 	if ent.trapped {
 		ictx.blocking = true;
 		return;
 	}
 
-	if s.field.get_terrain(ent.pos) == Terrain::Water || is_solid_or_dirt(ent.pos, ictx.push_dir, &s.field, &s.ents) {
+	let terrain = s.field.get_terrain(ent.pos);
+	if matches!(terrain, Terrain::Water) || is_solid_or_dirt(ent.pos, ictx.push_dir, &s.field, &s.ents) {
 		ictx.blocking = true;
 	}
 	else {
 		ictx.blocking = false;
 		ent.pos += ictx.push_dir.to_vec();
-		ent.move_dir = Some(ictx.push_dir);
+		ent.step_dir = Some(ictx.push_dir);
 		ent.face_dir = Some(ictx.push_dir);
-		ent.move_time = s.time;
-		// if ctx.field.get_tile(ent.pos).tile == Tile::Water {
-		// 	ictx.remove_entity = true;
-		// 	ctx.field.set_tile(ent.pos, dirt.unwrap());
-		// }
+		ent.step_time = s.time;
+
+		s.events.push(GameEvent::EntityStep { handle: ent.handle });
 
 		if bomb::check(ent, s) {
 			return;

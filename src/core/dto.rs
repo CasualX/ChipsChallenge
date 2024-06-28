@@ -40,6 +40,7 @@ impl GameState {
 		assert!(ld.map.width > 0, "Invalid map width");
 		assert!(ld.map.height > 0, "Invalid map height");
 		let size = ld.map.width as usize * ld.map.height as usize;
+		self.field.terrain.reserve_exact(size);
 
 		if ld.map.data.is_empty() {
 			for _ in 0..size {

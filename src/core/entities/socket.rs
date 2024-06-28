@@ -7,20 +7,20 @@ pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
 		handle,
 		kind: data.kind,
 		pos: data.pos,
-		move_dir: None,
-		move_spd: 0,
-		move_time: 0,
 		face_dir: data.face_dir,
+		step_dir: None,
+		step_spd: 0,
+		step_time: 0,
 		trapped: false,
 		remove: false,
 	});
 	return handle;
 }
 
-fn think(_ent: &mut Entity, _s: &mut GameState) {
+fn think(_s: &mut GameState, _ent: &mut Entity) {
 }
 
-fn interact(ent: &mut Entity, s: &mut GameState, ictx: &mut InteractContext) {
+fn interact(s: &mut GameState, ent: &mut Entity, ictx: &mut InteractContext) {
 	if s.ps.chips >= s.field.chips {
 		ent.remove = true;
 		ictx.blocking = false;

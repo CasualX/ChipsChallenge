@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 pub struct GameState {
-	pub time: i32,
+	pub time: Time,
 	pub ps: PlayerState,
 	pub field: Field,
 	pub ents: EntityMap,
@@ -18,7 +18,7 @@ impl GameState {
 		// Let entities think
 		for handle in self.ents.map.keys().cloned().collect::<Vec<_>>() {
 			if let Some(mut ent) = self.ents.remove(handle) {
-				(ent.funcs.think)(&mut ent, self);
+				(ent.funcs.think)(self, &mut ent);
 				self.ents.insert(ent);
 			}
 		}

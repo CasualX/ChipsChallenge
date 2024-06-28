@@ -7,30 +7,30 @@ pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
 		handle,
 		kind: data.kind,
 		pos: data.pos,
-		move_dir: None,
-		move_spd: 0,
-		move_time: 0,
 		face_dir: data.face_dir,
+		step_dir: None,
+		step_spd: 0,
+		step_time: 0,
 		trapped: false,
 		remove: false,
 	});
 	return handle;
 }
 
-fn think(_ent: &mut Entity, _s: &mut GameState) {
+fn think(_s: &mut GameState, _ent: &mut Entity) {
 }
 
-fn interact(ent: &mut Entity, ctx: &mut GameState, ictx: &mut InteractContext) {
+fn interact(s: &mut GameState, ent: &mut Entity, ictx: &mut InteractContext) {
 	match ent.kind {
-		EntityKind::Chip => ctx.ps.chips += 1,
-		EntityKind::BlueKey => ctx.ps.keys[0] += 1,
-		EntityKind::RedKey => ctx.ps.keys[1] += 1,
-		EntityKind::GreenKey => ctx.ps.keys[2] += 1,
-		EntityKind::YellowKey => ctx.ps.keys[3] += 1,
-		EntityKind::Flippers => ctx.ps.flippers = true,
-		EntityKind::FireBoots => ctx.ps.fire_boots = true,
-		EntityKind::IceSkates => ctx.ps.ice_skates = true,
-		EntityKind::SuctionBoots => ctx.ps.suction_boots = true,
+		EntityKind::Chip => s.ps.chips += 1,
+		EntityKind::BlueKey => s.ps.keys[KeyColor::Blue as usize] += 1,
+		EntityKind::RedKey => s.ps.keys[KeyColor::Red as usize] += 1,
+		EntityKind::GreenKey => s.ps.keys[KeyColor::Green as usize] += 1,
+		EntityKind::YellowKey => s.ps.keys[KeyColor::Yellow as usize] += 1,
+		EntityKind::Flippers => s.ps.flippers = true,
+		EntityKind::FireBoots => s.ps.fire_boots = true,
+		EntityKind::IceSkates => s.ps.ice_skates = true,
+		EntityKind::SuctionBoots => s.ps.suction_boots = true,
 		_ => (),
 	}
 

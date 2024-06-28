@@ -1,34 +1,57 @@
 use super::*;
 
-const IDLE_TIME: i32 = 30;
+/// Time after which Chip returns to idle animation
+const IDLE_TIME: Time = 20;
 
 pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
 	let handle = s.ents.alloc();
+	s.ps.entity = handle;
 	s.ents.insert(Entity {
 		funcs: &FUNCS,
 		handle,
 		kind: data.kind,
 		pos: data.pos,
-		move_dir: None,
-		move_spd: BASE_SPD,
-		move_time: 0,
 		face_dir: data.face_dir,
+		step_dir: None,
+		step_spd: BASE_SPD,
+		step_time: 0,
 		trapped: false,
 		remove: false,
 	});
 	return handle;
 }
 
-fn think(ent: &mut Entity, s: &mut GameState) {
+fn think(s: &mut GameState, ent: &mut Entity) {
 	let terrain = s.field.get_terrain(ent.pos);
-	let orig_dir = ent.move_dir;
+	let orig_dir = ent.step_dir;
+
+	// Freeze player if game over
+	if matches!(s.ps.action, PlayerAction::Win | PlayerAction::Burn | PlayerAction::Drown | PlayerAction::Death) {
+		return;
+	}
 
 	// Clear movement after a delay
-	if s.time >= ent.move_time + IDLE_TIME {
+	if s.time >= ent.step_time + IDLE_TIME {
+		if ent.face_dir.is_some() {
+			s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
+		}
 		ent.face_dir = None;
 	}
-	if s.time >= ent.move_time + ent.move_spd {
-		ent.move_dir = None;
+	if s.time >= ent.step_time + ent.step_spd {
+		if ent.step_dir.is_some() {
+			if matches!(terrain, Terrain::Fire) && !s.ps.fire_boots {
+				s.ps.action = PlayerAction::Burn;
+				s.events.push(GameEvent::PlayerActionChanged { handle: ent.handle });
+				return;
+			}
+			if matches!(terrain, Terrain::Water) && !s.ps.flippers {
+				s.ps.action = PlayerAction::Drown;
+				s.events.push(GameEvent::PlayerActionChanged { handle: ent.handle });
+				return;
+			}
+		}
+
+		ent.step_dir = None;
 	}
 
 	// Turn BlueFake to floor when stepping through it
@@ -36,28 +59,41 @@ fn think(ent: &mut Entity, s: &mut GameState) {
 		s.field.set_terrain(ent.pos, Terrain::Floor);
 	}
 
+	let action = match terrain {
+		Terrain::Water => PlayerAction::Swim,
+		Terrain::Ice | Terrain::IceNE | Terrain::IceNW | Terrain::IceSE | Terrain::IceSW => if s.ps.ice_skates { PlayerAction::Skate } else { PlayerAction::Slide },
+		Terrain::ForceN | Terrain::ForceW | Terrain::ForceS | Terrain::ForceE | Terrain::ForceRandom => if s.ps.suction_boots { PlayerAction::Suction } else { PlayerAction::Slide },
+		_ => PlayerAction::Walk,
+	};
+	if action != s.ps.action {
+		s.events.push(GameEvent::PlayerActionChanged { handle: ent.handle });
+		s.ps.action = action;
+	}
+
 	// Wait until movement is cleared before accepting new input
-	if ent.move_dir.is_none() {
+	if ent.step_dir.is_none() {
 
 		// Turn dirt to floor after stepping on it
 		if matches!(terrain, Terrain::Dirt) {
 			s.field.set_terrain(ent.pos, Terrain::Floor);
 		}
-
-		// Freeze the player when they reach the exit
-		if matches!(terrain, Terrain::Exit) {
-			ent.trapped = true;
+		// Win condition
+		if matches!(terrain, Terrain::Exit) && orig_dir.is_some() {
+			s.ps.action = PlayerAction::Win;
+			s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
+			s.events.push(GameEvent::GameWin);
+			return;
 		}
 
 		// Set the player's move speed
 		if !s.ps.suction_boots && matches!(terrain, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
-			ent.move_spd = BASE_SPD / 2;
+			ent.step_spd = BASE_SPD / 2;
 		}
 		else if !s.ps.ice_skates && matches!(terrain, Terrain::Ice | Terrain::IceNE | Terrain::IceSE | Terrain::IceNW | Terrain::IceSW) {
-			ent.move_spd = BASE_SPD / 2;
+			ent.step_spd = BASE_SPD / 2;
 		}
 		else {
-			ent.move_spd = BASE_SPD;
+			ent.step_spd = BASE_SPD;
 		}
 
 		'end_move: {
@@ -81,8 +117,8 @@ fn think(ent: &mut Entity, s: &mut GameState) {
 					ent.trapped = true;
 				}
 				if matches!(terrain, Terrain::Teleport) {
-					ent.pos = find_teleport_dest(ent.pos, orig_dir, s);
-					try_move(ent, orig_dir, s);
+					teleport(s, ent, orig_dir);
+					try_move(s, ent, orig_dir);
 					break 'end_move;
 				}
 
@@ -119,8 +155,8 @@ fn think(ent: &mut Entity, s: &mut GameState) {
 						},
 					};
 					// If the player is blocked, try to turn around
-					if !try_move(ent, ice_dir, s) {
-						if !try_move(ent, back_dir, s) {
+					if !try_move(s, ent, ice_dir) {
+						if !try_move(s, ent, back_dir) {
 							// Softlocked!
 						}
 					}
@@ -143,8 +179,6 @@ fn think(ent: &mut Entity, s: &mut GameState) {
 			};
 			let forced_move = s.ps.forced_move;
 			s.ps.forced_move = false;
-			// let first_time_force_dir = ctx.ps.force_dir.is_none();
-			// ctx.ps.force_dir = None;
 			if let Some(force_dir) = force_dir {
 
 				let override_dir = match force_dir {
@@ -154,13 +188,12 @@ fn think(ent: &mut Entity, s: &mut GameState) {
 				};
 
 				if override_dir.is_none() {
-					// ctx.ps.force_dir = Some(force_dir);
 					s.ps.forced_move = true;
 				}
 
 				match override_dir {
-					Some(override_dir) if try_move(ent, override_dir, s) => true,
-					_ => try_move(ent, force_dir, s),
+					Some(override_dir) if try_move(s, ent, override_dir) => true,
+					_ => try_move(s, ent, force_dir),
 				};
 
 				break 'end_move;
@@ -168,16 +201,16 @@ fn think(ent: &mut Entity, s: &mut GameState) {
 
 			// Handle player input
 			if ent.trapped { }
-			else if s.input.left && try_move(ent, Dir::Left, s) { }
-			else if s.input.right && try_move(ent, Dir::Right, s) { }
-			else if s.input.up && try_move(ent, Dir::Up, s) { }
-			else if s.input.down && try_move(ent, Dir::Down, s) { }
+			else if s.input.left && try_move(s, ent, Dir::Left) { }
+			else if s.input.right && try_move(s, ent, Dir::Right) { }
+			else if s.input.up && try_move(s, ent, Dir::Up) { }
+			else if s.input.down && try_move(s, ent, Dir::Down) { }
 		}
 	}
 }
 
-fn find_teleport_dest(orig_pos: Vec2i, dir: Dir, s: &mut GameState) -> Vec2i {
-	let mut pos = orig_pos;
+fn teleport(s: &mut GameState, ent: &mut Entity, dir: Dir) {
+	let mut pos = ent.pos;
 	loop {
 		let Some(dest) = s.field.get_conn_dest(pos) else { break };
 		let flags = CanMoveFlags {
@@ -188,44 +221,48 @@ fn find_teleport_dest(orig_pos: Vec2i, dir: Dir, s: &mut GameState) -> Vec2i {
 		if s.field.can_move(dest, dir, &flags) {
 			break;
 		}
-		if pos == orig_pos {
+		if pos == ent.pos {
 			break;
 		}
 	}
-	return pos;
+	ent.pos = pos;
+	s.events.push(GameEvent::EntityTeleport { handle: ent.handle });
 }
 
-fn try_move(ent: &mut Entity, move_dir: Dir, s: &mut GameState) -> bool {
+fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	let new_pos = ent.pos + move_dir.to_vec();
 
 	let terrain = s.field.get_terrain(new_pos);
-	if matches!(terrain, Terrain::BlueLock) && s.ps.keys[0] > 0 {
-		s.field.set_terrain(new_pos, Terrain::Floor);
-		s.ps.keys[0] -= 1;
-		s.events.push(GameEvent::LockRemoved { pos: new_pos, key: KeyColor::Blue });
-	}
-	if matches!(terrain, Terrain::RedLock) && s.ps.keys[1] > 0 {
-		s.field.set_terrain(new_pos, Terrain::Floor);
-		s.ps.keys[1] -= 1;
-		s.events.push(GameEvent::LockRemoved { pos: new_pos, key: KeyColor::Red });
-	}
-	if matches!(terrain, Terrain::GreenLock) && s.ps.keys[2] > 0 {
-		s.field.set_terrain(new_pos, Terrain::Floor);
-		// ctx.ps.keys[2] -= 1; // Green keys are infinite
-		s.events.push(GameEvent::LockRemoved { pos: new_pos, key: KeyColor::Green });
-	}
-	if matches!(terrain, Terrain::YellowLock) && s.ps.keys[3] > 0 {
-		s.field.set_terrain(new_pos, Terrain::Floor);
-		s.ps.keys[3] -= 1;
-		s.events.push(GameEvent::LockRemoved { pos: new_pos, key: KeyColor::Yellow });
-	}
-	if matches!(terrain, Terrain::BlueWall) {
-		s.field.set_terrain(new_pos, Terrain::Wall);
-		s.events.push(GameEvent::BlueWallBumped { pos: new_pos });
-	}
-	if matches!(terrain, Terrain::HiddenWall) {
-		s.field.set_terrain(new_pos, Terrain::Wall);
-		s.events.push(GameEvent::HiddenWallBumped { pos: new_pos });
+	match terrain {
+		Terrain::BlueLock => if s.ps.keys[KeyColor::Blue as usize] > 0 {
+			s.field.set_terrain(new_pos, Terrain::Floor);
+			s.ps.keys[KeyColor::Blue as usize] -= 1;
+			s.events.push(GameEvent::LockRemoved { pos: new_pos, key: KeyColor::Blue });
+		}
+		Terrain::RedLock => if s.ps.keys[KeyColor::Red as usize] > 0 {
+			s.field.set_terrain(new_pos, Terrain::Floor);
+			s.ps.keys[KeyColor::Red as usize] -= 1;
+			s.events.push(GameEvent::LockRemoved { pos: new_pos, key: KeyColor::Red });
+		}
+		Terrain::GreenLock => if s.ps.keys[KeyColor::Green as usize] > 0 {
+			s.field.set_terrain(new_pos, Terrain::Floor);
+			// s.ps.keys[KeyColor::Green as usize] -= 1; // Green keys are infinite
+			s.events.push(GameEvent::LockRemoved { pos: new_pos, key: KeyColor::Green });
+		}
+		Terrain::YellowLock => if s.ps.keys[KeyColor::Yellow as usize] > 0 {
+			s.field.set_terrain(new_pos, Terrain::Floor);
+			s.ps.keys[KeyColor::Yellow as usize] -= 1;
+			s.events.push(GameEvent::LockRemoved { pos: new_pos, key: KeyColor::Yellow });
+		}
+		Terrain::BlueWall => {
+			s.field.set_terrain(new_pos, Terrain::Wall);
+			s.events.push(GameEvent::BlueWallBumped { pos: new_pos });
+		}
+		Terrain::HiddenWall => {
+			s.field.set_terrain(new_pos, Terrain::Wall);
+			s.events.push(GameEvent::HiddenWallBumped { pos: new_pos });
+		}
+		_ => {}
 	}
 
 	let flags = CanMoveFlags {
@@ -241,32 +278,39 @@ fn try_move(ent: &mut Entity, move_dir: Dir, s: &mut GameState) -> bool {
 				push_dir: move_dir,
 			};
 			if ent.pos == new_pos {
-				(ent.funcs.interact)(&mut ent, s, &mut ictx);
+				(ent.funcs.interact)(s, &mut ent, &mut ictx);
 			}
 			s.ents.insert(ent);
 			if ictx.blocking {
 				success = false;
+				// This is tricky. Consider the following:
+				// A block is on top of an item pickup (Chip, etc)
+				// If we continued and interacted with all entities, the player can interact with the item pickup through the block
+				// To prevent that break here BUT the block must be earlier in the entity list than the item pickup
+				break;
 			}
 		}
 	}
 
+	s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
 	ent.face_dir = Some(move_dir);
-	ent.move_time = s.time;
+	ent.step_time = s.time;
 	if success {
-		if s.field.get_terrain(ent.pos) == Terrain::RecessedWall {
+		let terrain = s.field.get_terrain(ent.pos);
+		if matches!(terrain, Terrain::RecessedWall) {
 			s.field.set_terrain(ent.pos, Terrain::Wall);
 		}
 
-		ent.move_dir = Some(move_dir);
+		ent.step_dir = Some(move_dir);
 		ent.pos = new_pos;
 		s.ps.steps += 1;
-		s.events.push(GameEvent::EntityMoved { handle: ent.handle });
+		s.events.push(GameEvent::EntityStep { handle: ent.handle });
 	}
 
 	return success;
 }
 
-fn interact(_ent: &mut Entity, _s: &mut GameState, ictx: &mut InteractContext) {
+fn interact(_s: &mut GameState, _ent: &mut Entity, ictx: &mut InteractContext) {
 	ictx.blocking = false;
 }
 

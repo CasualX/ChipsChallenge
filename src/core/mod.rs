@@ -45,3 +45,5 @@ pub const PANEL_N: u8 = 0x1;
 pub const PANEL_E: u8 = 0x2;
 pub const PANEL_S: u8 = 0x4;
 pub const PANEL_W: u8 = 0x8;
+
+type Time = i32;

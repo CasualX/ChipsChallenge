@@ -29,8 +29,8 @@ pub enum EntityKind {
 
 #[derive(Debug)]
 pub struct EntityFuncs {
-	pub think: fn(&mut Entity, &mut GameState),
-	pub interact: fn(&mut Entity, &mut GameState, &mut InteractContext),
+	pub think: fn(&mut GameState, &mut Entity),
+	pub interact: fn(&mut GameState, &mut Entity, &mut InteractContext),
 }
 
 #[derive(Clone, Debug)]
@@ -39,10 +39,10 @@ pub struct Entity {
 	pub handle: EntityHandle,
 	pub kind: EntityKind,
 	pub pos: Vec2i,
-	pub move_dir: Option<Dir>,
-	pub move_spd: i32,
-	pub move_time: i32,
 	pub face_dir: Option<Dir>,
+	pub step_dir: Option<Dir>,
+	pub step_spd: Time,
+	pub step_time: Time,
 	pub trapped: bool,
 	pub remove: bool,
 }

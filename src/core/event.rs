@@ -16,6 +16,7 @@ pub enum Pickup {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum KeyColor {
 	Blue,
 	Red,
@@ -27,8 +28,9 @@ pub enum KeyColor {
 pub enum GameEvent {
 	EntityCreated { handle: EntityHandle },
 	EntityRemoved { handle: EntityHandle },
-	EntityMoved { handle: EntityHandle },
-	EntityTeleported { handle: EntityHandle },
+	EntityStep { handle: EntityHandle },
+	EntityFaceDir { handle: EntityHandle },
+	EntityTeleport { handle: EntityHandle },
 	PlayerActionChanged { handle: EntityHandle },
 	ItemPickup { handle: EntityHandle, kind: Pickup },
 	SocketFilled { pos: Vec2i },
@@ -37,4 +39,5 @@ pub enum GameEvent {
 	BlueWallBumped { pos: Vec2i },
 	BlueWallCleared { pos: Vec2i },
 	HiddenWallBumped { pos: Vec2i },
+	GameWin,
 }

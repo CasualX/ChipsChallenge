@@ -3,7 +3,6 @@ use super::*;
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
 pub enum PlayerAction {
 	#[default]
-	Idle,
 	Walk,
 	Push,
 	Swim,
@@ -19,15 +18,18 @@ pub enum PlayerAction {
 #[derive(Clone, Default)]
 pub struct PlayerState {
 	pub entity: EntityHandle,
-	pub state: PlayerAction,
 
-	/// Force floor direction from previous step.
-	// pub force_dir: Option<Dir>,
+	/// Current player action.
+	pub action: PlayerAction,
+	/// True if previous movement was involuntary.
 	pub forced_move: bool,
 	/// Total steps taken (for high score).
 	pub steps: i32,
+	/// Total chips collected.
 	pub chips: i32,
+	/// Keys collected.
 	pub keys: [u8; 4],
+
 	pub flippers: bool,
 	pub fire_boots: bool,
 	pub ice_skates: bool,
