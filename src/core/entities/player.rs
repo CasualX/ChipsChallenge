@@ -3,19 +3,20 @@ use super::*;
 /// Time after which Chip returns to idle animation
 const IDLE_TIME: Time = 20;
 
-pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
+pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 	let handle = s.ents.alloc();
 	s.ps.entity = handle;
 	s.ents.insert(Entity {
 		funcs: &FUNCS,
 		handle,
-		kind: data.kind,
-		pos: data.pos,
-		face_dir: data.face_dir,
+		kind: args.kind,
+		pos: args.pos,
+		face_dir: args.face_dir,
 		step_dir: None,
 		step_spd: BASE_SPD,
 		step_time: 0,
 		trapped: false,
+		hidden: false,
 		remove: false,
 	});
 	return handle;
@@ -33,20 +34,18 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 	// Clear movement after a delay
 	if s.time >= ent.step_time + IDLE_TIME {
 		if ent.face_dir.is_some() {
-			s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
+			s.events.push(GameEvent::EntityFaceDir { entity: ent.handle });
 		}
 		ent.face_dir = None;
 	}
 	if s.time >= ent.step_time + ent.step_spd {
 		if ent.step_dir.is_some() {
 			if matches!(terrain, Terrain::Fire) && !s.ps.fire_boots {
-				s.ps.action = PlayerAction::Burn;
-				s.events.push(GameEvent::PlayerActionChanged { handle: ent.handle });
+				ps_action(s, PlayerAction::Burn);
 				return;
 			}
 			if matches!(terrain, Terrain::Water) && !s.ps.flippers {
-				s.ps.action = PlayerAction::Drown;
-				s.events.push(GameEvent::PlayerActionChanged { handle: ent.handle });
+				ps_action(s, PlayerAction::Drown);
 				return;
 			}
 		}
@@ -60,24 +59,29 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 		Terrain::ForceN | Terrain::ForceW | Terrain::ForceS | Terrain::ForceE | Terrain::ForceRandom => if s.ps.suction_boots { PlayerAction::Suction } else { PlayerAction::Slide },
 		_ => PlayerAction::Walk,
 	};
-	if action != s.ps.action {
-		s.events.push(GameEvent::PlayerActionChanged { handle: ent.handle });
-		s.ps.action = action;
+	ps_action(s, action);
+
+	// Turn dirt to floor after stepping on it
+	if matches!(terrain, Terrain::Dirt) {
+		s.field.set_terrain(ent.pos, Terrain::Floor);
 	}
 
 	// Wait until movement is cleared before accepting new input
 	if s.time >= ent.step_time + ent.step_spd {
+		let input_dir = s.ps.inbuf.read_move();
 
-		// Turn dirt to floor after stepping on it
-		if matches!(terrain, Terrain::Dirt) {
-			s.field.set_terrain(ent.pos, Terrain::Floor);
-		}
 		// Win condition
 		if matches!(terrain, Terrain::Exit) && orig_dir.is_some() {
-			s.ps.action = PlayerAction::Win;
-			s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
-			s.events.push(GameEvent::GameWin { handle: ent.handle });
+			s.events.push(GameEvent::EntityFaceDir { entity: ent.handle });
+			ps_action(s, PlayerAction::Win);
 			return;
+		}
+
+		if s.ps.dev_ghost {
+			if let Some(input_dir) = input_dir {
+				try_move(s, ent, input_dir);
+				return;
+			}
 		}
 
 		'end_move: {
@@ -85,25 +89,28 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 			if let Some(orig_dir) = orig_dir {
 
 				// Handle switch tiles
-				if matches!(terrain, Terrain::GreenButton) {
-					entities::press_green_button(s);
-				}
-				if matches!(terrain, Terrain::RedButton) {
-					entities::press_red_button(s, ent.pos);
-				}
-				if matches!(terrain, Terrain::BrownButton) {
-					entities::press_brown_button(s, ent.pos);
-				}
-				if matches!(terrain, Terrain::BlueButton) {
-					entities::press_blue_button(s);
-				}
-				if matches!(terrain, Terrain::BearTrap) {
-					ent.trapped = true;
-				}
+				// if matches!(terrain, Terrain::GreenButton) {
+				// 	entities::press_green_button(s, ent.handle);
+				// }
+				// if matches!(terrain, Terrain::RedButton) {
+				// 	entities::press_red_button(s, ent.pos);
+				// }
+				// if matches!(terrain, Terrain::BrownButton) {
+				// 	entities::press_brown_button(s, ent.pos);
+				// }
+				// if matches!(terrain, Terrain::BlueButton) {
+				// 	entities::press_blue_button(s);
+				// }
+				// if matches!(terrain, Terrain::BearTrap) {
+				// 	ent.trapped = true;
+				// }
 				if matches!(terrain, Terrain::Teleport) {
 					teleport(s, ent, orig_dir);
 					try_move(s, ent, orig_dir);
 					break 'end_move;
+				}
+				if matches!(terrain, Terrain::Hint) {
+					s.events.push(GameEvent::PlayerHint { player: ent.handle, pos: ent.pos });
 				}
 
 				// Handle ice physics
@@ -167,8 +174,8 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 
 				let override_dir = match force_dir {
 					_ if !forced_move || ent.trapped => None,
-					Dir::Left | Dir::Right => if s.input.up { Some(Dir::Up) } else if s.input.down { Some(Dir::Down) } else { None },
-					Dir::Up | Dir::Down => if s.input.left { Some(Dir::Left) } else if s.input.right { Some(Dir::Right) } else { None },
+					Dir::Left | Dir::Right => if input_dir == Some(Dir::Up) { Some(Dir::Up) } else if input_dir == Some(Dir::Down) { Some(Dir::Down) } else { None },
+					Dir::Up | Dir::Down => if input_dir == Some(Dir::Left) { Some(Dir::Left) } else if input_dir == Some(Dir::Right) { Some(Dir::Right) } else { None },
 				};
 
 				if override_dir.is_none() {
@@ -185,10 +192,9 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 
 			// Handle player input
 			if ent.trapped { }
-			else if s.input.left && try_move(s, ent, Dir::Left) { }
-			else if s.input.right && try_move(s, ent, Dir::Right) { }
-			else if s.input.up && try_move(s, ent, Dir::Up) { }
-			else if s.input.down && try_move(s, ent, Dir::Down) { }
+			else if let Some(dir) = input_dir {
+				try_move(s, ent, dir);
+			}
 		}
 	}
 }
@@ -200,6 +206,7 @@ fn teleport(s: &mut GameState, ent: &mut Entity, dir: Dir) {
 		let flags = CanMoveFlags {
 			gravel: true,
 			fire: true,
+			dirt: true,
 		};
 		pos = dest;
 		if s.field.can_move(dest, dir, &flags) {
@@ -210,7 +217,7 @@ fn teleport(s: &mut GameState, ent: &mut Entity, dir: Dir) {
 		}
 	}
 	ent.pos = pos;
-	s.events.push(GameEvent::EntityTeleport { handle: ent.handle });
+	s.events.push(GameEvent::EntityTeleport { entity: ent.handle });
 }
 
 fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
@@ -256,8 +263,9 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	let flags = CanMoveFlags {
 		gravel: true,
 		fire: true,
+		dirt: true,
 	};
-	let mut success = s.field.can_move(ent.pos, move_dir, &flags);
+	let mut success = s.ps.dev_ghost || s.field.can_move(ent.pos, move_dir, &flags);
 	if success {
 		for handle in s.ents.map.keys().cloned().collect::<Vec<_>>() {
 			let Some(mut ent) = s.ents.remove(handle) else { continue };
@@ -266,7 +274,7 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 				push_dir: move_dir,
 			};
 			if ent.pos == new_pos {
-				(ent.funcs.interact)(s, &mut ent, &mut ictx);
+				interact(s, &mut ent, &mut ictx);
 			}
 			s.ents.insert(ent);
 			if ictx.blocking {
@@ -280,7 +288,7 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 		}
 	}
 
-	s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
+	s.events.push(GameEvent::EntityFaceDir { entity: ent.handle });
 	ent.face_dir = Some(move_dir);
 	ent.step_time = s.time;
 	if success {
@@ -292,6 +300,7 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 
 		ent.step_dir = Some(move_dir);
 		ent.pos = new_pos;
+		interact_terrain(s, ent);
 
 		// Set the player's move speed
 		if !s.ps.suction_boots && matches!(terrain, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
@@ -305,7 +314,7 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 		}
 
 		s.ps.steps += 1;
-		s.events.push(GameEvent::EntityStep { handle: ent.handle });
+		s.events.push(GameEvent::EntityStep { entity: ent.handle });
 	}
 	else {
 		ent.step_spd = BASE_SPD / 2;
@@ -314,8 +323,81 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	return success;
 }
 
-fn interact(_s: &mut GameState, _ent: &mut Entity, ictx: &mut InteractContext) {
-	ictx.blocking = false;
+fn interact(s: &mut GameState, ent: &mut Entity, ictx: &mut InteractContext) {
+	match ent.kind {
+		EntityKind::Block => {
+			if ent.trapped {
+				ictx.blocking = true;
+				return;
+			}
+
+			let terrain = s.field.get_terrain(ent.pos);
+			if matches!(terrain, Terrain::Water) || is_solid_or_dirt(ent.pos, ictx.push_dir, &s.field, &s.ents) {
+				ictx.blocking = true;
+			}
+			else {
+				ictx.blocking = false;
+				ent.pos += ictx.push_dir.to_vec();
+				ent.step_dir = Some(ictx.push_dir);
+				ent.face_dir = Some(ictx.push_dir);
+				ent.step_time = s.time;
+
+				s.events.push(GameEvent::EntityStep { entity: ent.handle });
+
+				update_hidden_entities(s);
+
+				let terrain = s.field.get_terrain(ent.pos);
+				if matches!(terrain, Terrain::BearTrap) {
+					ent.trapped = true;
+				}
+			}
+		}
+		EntityKind::Socket => {
+			if s.ps.chips >= s.field.chips {
+				ent.remove = true;
+				ictx.blocking = false;
+				s.events.push(GameEvent::SocketFilled { pos: ent.pos });
+			}
+			else {
+				ictx.blocking = true;
+			}
+		}
+		EntityKind::Thief => {
+			ictx.blocking = false;
+			s.ps.flippers = false;
+			s.ps.fire_boots = false;
+			s.ps.ice_skates = false;
+			s.ps.suction_boots = false;
+			s.events.push(GameEvent::ItemsThief { player: s.ps.entity });
+		}
+		_ => {}
+	}
 }
 
-static FUNCS: EntityFuncs = EntityFuncs { think, interact };
+fn is_solid_or_dirt(pos: Vec2i, move_dir: Dir, field: &Field, entities: &EntityMap) -> bool {
+	let flags = CanMoveFlags {
+		gravel: false,
+		fire: true,
+		dirt: false,
+	};
+	if !field.can_move(pos, move_dir, &flags) {
+		return true;
+	}
+
+	let new_pos = pos + move_dir.to_vec();
+	for ent in entities.map.values() {
+		if ent.pos == new_pos {
+			let solid = match ent.kind {
+				EntityKind::Socket => true,
+				EntityKind::Block => true,
+				_ => false,
+			};
+			if solid {
+				return true;
+			}
+		}
+	}
+	false
+}
+
+static FUNCS: EntityFuncs = EntityFuncs { think };

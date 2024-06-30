@@ -11,6 +11,7 @@ pub struct MoveStep {
 	pub move_time: f32,
 	pub move_spd: f32,
 }
+
 #[derive(Clone, Debug)]
 pub struct MoveVel {
 	pub vel: Vec3<f32>,
@@ -28,6 +29,7 @@ pub struct Object {
 	pub entity_handle: core::EntityHandle,
 	pub entity_kind: core::EntityKind,
 	pub pos: Vec3<f32>,
+	pub lerp_pos: Vec3<f32>,
 	pub mover: MoveType,
 	pub sprite: Sprite,
 	pub model: Model,
@@ -36,6 +38,7 @@ pub struct Object {
 	pub alpha: f32,
 	pub vis: bool,
 	pub live: bool,
+	pub unalive_after_anim: bool,
 }
 
 impl Object {
@@ -44,18 +47,19 @@ impl Object {
 			return;
 		}
 
-		// (self.funcs.update)(self, ctx);
-
 		match &mut self.mover {
 			MoveType::Step(step) => {
 				let t = f32::min(1.0, (ctx.time - step.move_time) / step.move_spd);
 				let src = step.src.map(|c| c as f32 * 32.0).vec3(0.0);
 				let dest = step.dest.map(|c| c as f32 * 32.0).vec3(0.0);
-				self.pos = src.lerp(dest, t);
+				self.lerp_pos = src.lerp(dest, t);
+				self.pos = self.pos.exp_decay(dest, 100.0 * step.move_spd, ctx.dt);
+				if t > 0.75 {
+					self.pos = dest;
+				}
 			},
 			MoveType::Vel(vel) => {
 				self.pos += vel.vel * ctx.dt;
-				// self.pos = self.pos.exp_decay(vel.pos, 25.0, ctx.dt);
 			},
 		}
 
@@ -66,7 +70,9 @@ impl Object {
 			self.alpha = f32::max(0.0, 1.0 - (ctx.time - self.atime) * 5.0);
 			if self.alpha == 0.0 {
 				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
-				self.live = false;
+				if self.unalive_after_anim {
+					self.live = false;
+				}
 			}
 		}
 		if matches!(self.anim, Animation::FadeIn) {
@@ -82,9 +88,12 @@ impl Object {
 			if self.atime == 0.0 {
 				self.atime = ctx.time;
 			}
-			if ctx.time > self.atime + 0.5 {
+			if self.pos.z <= -20.0 {
+				self.pos.z = -21.0;
 				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
-				self.live = false;
+				if self.unalive_after_anim {
+					self.live = false;
+				}
 			}
 		}
 		if matches!(self.anim, Animation::Raise) {

@@ -34,7 +34,7 @@ pub static TILES_PLAY: [TileGfx; 45] = [
 	TileGfx { sprite: Sprite::ForceRandom, model: Model::Floor }, // Terrain::ForceRandom
 	TileGfx { sprite: Sprite::CloneMachine, model: Model::Wall }, // Terrain::CloneMachine
 	TileGfx { sprite: Sprite::OnOffFloor, model: Model::Floor }, // Terrain::ToggleFloor
-	TileGfx { sprite: Sprite::OnOffWall, model: Model::Wall }, // Terrain::ToggleWall
+	TileGfx { sprite: Sprite::OnOffFloor, model: Model::Floor }, // Terrain::ToggleWall
 	TileGfx { sprite: Sprite::PanelNorth, model: Model::Floor }, // Terrain::PanelN
 	TileGfx { sprite: Sprite::PanelWest, model: Model::Floor }, // Terrain::PanelW
 	TileGfx { sprite: Sprite::PanelSouth, model: Model::Floor }, // Terrain::PanelS

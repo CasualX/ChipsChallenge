@@ -44,6 +44,7 @@ impl Field {
 pub struct CanMoveFlags {
 	pub gravel: bool,
 	pub fire: bool,
+	pub dirt: bool,
 }
 impl Field {
 	pub fn can_move(&self, pos: Vec2i, dir: Dir, flags: &CanMoveFlags) -> bool {
@@ -84,6 +85,9 @@ impl Field {
 			return false;
 		}
 		if !flags.fire && matches!(next_terrain, Terrain::Fire) {
+			return false;
+		}
+		if !flags.dirt && matches!(next_terrain, Terrain::Dirt) {
 			return false;
 		}
 

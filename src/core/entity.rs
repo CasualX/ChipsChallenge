@@ -32,7 +32,7 @@ pub enum EntityKind {
 #[derive(Debug)]
 pub struct EntityFuncs {
 	pub think: fn(&mut GameState, &mut Entity),
-	pub interact: fn(&mut GameState, &mut Entity, &mut InteractContext),
+	// pub try_move: fn(&mut GameState, &mut Entity, Dir) -> bool,
 }
 
 #[derive(Clone, Debug)]
@@ -45,6 +45,10 @@ pub struct Entity {
 	pub step_dir: Option<Dir>,
 	pub step_spd: Time,
 	pub step_time: Time,
+	/// Entity is trapped and cannot move.
 	pub trapped: bool,
+	/// Entity is hidden under a block.
+	pub hidden: bool,
+	/// Entity will be removed at the end of the current tick.
 	pub remove: bool,
 }

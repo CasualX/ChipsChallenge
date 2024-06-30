@@ -41,6 +41,7 @@ fn main() {
 	let mut past_now = time::Instant::now();
 
 	let mut state = chipgame::visual::VisualState::default();
+	state.init();
 	state.load_level(&fs::read_to_string(&file_path).unwrap());
 	let mut input = chipgame::core::Input::default();
 
@@ -77,6 +78,12 @@ fn main() {
 					}
 					if keyboard_input.virtual_keycode == Some(winit::event::VirtualKeyCode::Down) {
 						input.down = keyboard_input.state == winit::event::ElementState::Pressed;
+					}
+					if keyboard_input.virtual_keycode == Some(winit::event::VirtualKeyCode::A) {
+						input.a = keyboard_input.state == winit::event::ElementState::Pressed;
+					}
+					if keyboard_input.virtual_keycode == Some(winit::event::VirtualKeyCode::B) {
+						input.b = keyboard_input.state == winit::event::ElementState::Pressed;
 					}
 				}
 				winit::event::Event::MainEventsCleared => {

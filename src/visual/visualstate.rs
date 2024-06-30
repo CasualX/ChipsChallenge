@@ -8,9 +8,13 @@ pub struct VisualState {
 	pub camera: Camera,
 	pub objects: ObjectMap,
 	pub resources: Resources,
+	pub tiles: &'static [TileGfx],
 }
 
 impl VisualState {
+	pub fn init(&mut self) {
+		self.tiles = &TILES_PLAY;
+	}
 	pub fn load_level(&mut self, json: &str) {
 		self.game.load(json);
 		self.sync(&self.game.events.clone());
@@ -21,7 +25,9 @@ impl VisualState {
 				let index = (y * self.game.field.width + x) as usize;
 				let terrain = self.game.field.terrain[index];
 				match terrain {
-					core::Terrain::Fire => create_fire(self, Vec3::new(x as f32, y as f32, 0.0)),
+					core::Terrain::Fire => create_fire(self, Vec2::new(x, y)),
+					core::Terrain::ToggleFloor => create_toggle_floor(self, Vec2(x, y)),
+					core::Terrain::ToggleWall => create_toggle_wall(self, Vec2(x, y)),
 					_ => {}
 				}
 			}
@@ -35,17 +41,19 @@ impl VisualState {
 		for ev in events {
 			println!("Event: {:?}", ev);
 			match ev {
-				&core::GameEvent::EntityCreated { handle } => entity_created(self, handle),
-				&core::GameEvent::EntityRemoved { handle } => entity_removed(self, handle),
-				&core::GameEvent::EntityStep { handle } => entity_step(self, handle),
-				&core::GameEvent::EntityFaceDir { handle } => entity_face_dir(self, handle),
-				&core::GameEvent::PlayerActionChanged { handle } => entity_face_dir(self, handle),
-				&core::GameEvent::ItemPickup { handle, .. } => item_pickup(self, handle),
+				&core::GameEvent::EntityCreated { entity } => entity_created(self, entity),
+				&core::GameEvent::EntityRemoved { entity } => entity_removed(self, entity),
+				&core::GameEvent::EntityStep { entity } => entity_step(self, entity),
+				&core::GameEvent::EntityFaceDir { entity } => entity_face_dir(self, entity),
+				&core::GameEvent::EntityHidden { entity, hidden } => entity_hidden(self, entity, hidden),
+				&core::GameEvent::EntityTeleport { entity } => entity_teleport(self, entity),
+				&core::GameEvent::PlayerAction { player } => entity_face_dir(self, player),
+				&core::GameEvent::ItemPickup { player, .. } => item_pickup(self, player),
 				&core::GameEvent::LockRemoved { pos, key } => lock_removed(self, pos, key),
 				&core::GameEvent::BlueWallCleared { pos } => blue_wall_cleared(self, pos),
 				&core::GameEvent::HiddenWallBumped { pos } => hidden_wall_bumped(self, pos),
 				&core::GameEvent::RecessedWallRaised { pos } => recessed_wall_raised(self, pos),
-				&core::GameEvent::GameWin { handle } => game_win(self, handle),
+				&core::GameEvent::GreenButton { entity: _ } => toggle_walls(self),
 				_ => {}
 			}
 		}
@@ -84,5 +92,7 @@ impl VisualState {
 		cv.draw(g, shade::Surface::BACK_BUFFER).unwrap();
 
 		g.end().unwrap();
+
+		self.objects.map.retain(|_, obj| obj.live);
 	}
 }

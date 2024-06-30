@@ -1,3 +1,4 @@
+use std::cmp;
 use std::collections::HashMap;
 use cvmath::Vec2i;
 
@@ -10,6 +11,7 @@ mod entitymap;
 mod event;
 mod field;
 mod gamestate;
+mod inbuf;
 mod playerstate;
 mod terrain;
 
@@ -21,6 +23,7 @@ pub use self::entitymap::*;
 pub use self::event::*;
 pub use self::field::*;
 pub use self::gamestate::*;
+pub use self::inbuf::*;
 pub use self::playerstate::*;
 pub use self::terrain::*;
 

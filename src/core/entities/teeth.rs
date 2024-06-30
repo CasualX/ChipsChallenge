@@ -1,23 +1,28 @@
 use super::*;
 
-pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
+pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 	let handle = s.ents.alloc();
 	s.ents.insert(Entity {
 		funcs: &FUNCS,
 		handle,
-		kind: data.kind,
-		pos: data.pos,
-		face_dir: data.face_dir,
+		kind: args.kind,
+		pos: args.pos,
+		face_dir: args.face_dir,
 		step_dir: None,
-		step_spd: BASE_SPD,
+		step_spd: BASE_SPD * 2,
 		step_time: 0,
 		trapped: false,
+		hidden: false,
 		remove: false,
 	});
 	return handle;
 }
 
 fn think(s: &mut GameState, ent: &mut Entity) {
+	if s.ents.get(s.ps.entity).map(|e| e.pos) == Some(ent.pos) {
+		ps_action(s, PlayerAction::Death);
+	}
+
 	if ent.step_dir.is_some() && s.time >= ent.step_time + ent.step_spd {
 		// Check for traps
 		let terrain = s.field.get_terrain(ent.pos);
@@ -32,18 +37,75 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 		ent.step_dir = None;
 	}
 
-	if !ent.trapped && s.time >= ent.step_time + ent.step_spd {
-		if let Some(face_dir) = ent.face_dir {
-			// Try to move forward
-			if try_move(s, ent, face_dir) { }
-			// If it can turn left, turn left
-			else if try_move(s, ent, face_dir.turn_left()) { }
-			// If it can turn right, turn right
-			else if try_move(s, ent, face_dir.turn_right()) { }
-			// Try to turn around
-			else if try_move(s, ent, face_dir.turn_around()) { }
-			// Trapped! Wait until freed
-			else { }
+	if ent.trapped || ent.hidden {
+		return;
+	}
+	if s.time >= ent.step_time + ent.step_spd {
+		if let Some((first_dir, second_dir)) = chase_dirs(s, ent) {
+			if try_move(s, ent, first_dir) { }
+			else if try_move(s, ent, second_dir) { }
+			// If no legal move, stay put and face in the first direction
+			else {
+				if ent.face_dir != Some(first_dir) {
+					s.events.push(GameEvent::EntityFaceDir { entity: ent.handle });
+				}
+				ent.face_dir = Some(first_dir);
+			}
+		}
+	}
+}
+
+fn chase_dirs(s: &GameState, ent: &Entity) -> Option<(Dir, Dir)> {
+	let pl = s.ents.get(s.ps.entity)?;
+	let d = pl.pos - ent.pos;
+
+	// Teeth moves either vertically or horizontally toward Chip one square at a time, always taking the longer path, and vertically if tied.
+	// However, if this move would be illegal because of some obstacle, it will go the other way if that is a legal move, and if not,
+	// it will stay put until Chip moves somewhere that allows it to make another move.
+
+	if d.y == 0 {
+		if d.x > 0 {
+			Some((Dir::Right, Dir::Right))
+		}
+		else if d.x < 0 {
+			Some((Dir::Left, Dir::Left))
+		}
+		else {
+			None
+		}
+	}
+	else if d.y > 0 {
+		if d.x > d.y {
+			Some((Dir::Right, Dir::Down))
+		}
+		else if d.x > 0 {
+			Some((Dir::Down, Dir::Right))
+		}
+		else if d.x == 0 {
+			Some((Dir::Down, Dir::Down))
+		}
+		else if d.x < d.y {
+			Some((Dir::Left, Dir::Down))
+		}
+		else {
+			Some((Dir::Down, Dir::Left))
+		}
+	}
+	else/* if d.y < 0*/ {
+		if d.x > -d.y {
+			Some((Dir::Right, Dir::Up))
+		}
+		else if d.x > 0 {
+			Some((Dir::Up, Dir::Right))
+		}
+		else if d.x == 0 {
+			Some((Dir::Up, Dir::Up))
+		}
+		else if d.x < -d.y {
+			Some((Dir::Left, Dir::Up))
+		}
+		else {
+			Some((Dir::Up, Dir::Left))
 		}
 	}
 }
@@ -51,7 +113,8 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	let flags = CanMoveFlags {
 		gravel: false,
-		fire: true,
+		fire: false,
+		dirt: false,
 	};
 	if !s.field.can_move(ent.pos, move_dir, &flags) {
 		return false;
@@ -69,8 +132,8 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 		}
 	}
 
-	s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
-	s.events.push(GameEvent::EntityStep { handle: ent.handle });
+	s.events.push(GameEvent::EntityFaceDir { entity: ent.handle });
+	s.events.push(GameEvent::EntityStep { entity: ent.handle });
 	ent.face_dir = Some(move_dir);
 	ent.step_dir = Some(move_dir);
 	ent.step_time = s.time;
@@ -78,7 +141,4 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	return true;
 }
 
-fn interact(_s: &mut GameState, _ent: &mut Entity, _ictx: &mut InteractContext) {
-}
-
-static FUNCS: EntityFuncs = EntityFuncs { think, interact };
+static FUNCS: EntityFuncs = EntityFuncs { think };

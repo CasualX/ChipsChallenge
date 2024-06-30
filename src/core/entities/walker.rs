@@ -1,46 +1,37 @@
 use super::*;
 
-pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
+pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 	let handle = s.ents.alloc();
 	s.ents.insert(Entity {
 		funcs: &FUNCS,
 		handle,
-		kind: data.kind,
-		pos: data.pos,
-		face_dir: data.face_dir,
+		kind: args.kind,
+		pos: args.pos,
+		face_dir: args.face_dir,
 		step_dir: None,
 		step_spd: BASE_SPD,
 		step_time: 0,
 		trapped: false,
+		hidden: false,
 		remove: false,
 	});
 	return handle;
 }
 
 fn think(s: &mut GameState, ent: &mut Entity) {
-	if ent.step_dir.is_some() && s.time >= ent.step_time + ent.step_spd {
-		let terrain = s.field.get_terrain(ent.pos);
+	if s.ents.get(s.ps.entity).map(|e| e.pos) == Some(ent.pos) {
+		ps_action(s, PlayerAction::Death);
+	}
 
-		if matches!(terrain, Terrain::GreenButton) {
-			entities::press_green_button(s);
-		}
-		if matches!(terrain, Terrain::RedButton) {
-			entities::press_red_button(s, ent.pos);
-		}
-		if matches!(terrain, Terrain::BrownButton) {
-			entities::press_brown_button(s, ent.pos);
-		}
-		if matches!(terrain, Terrain::BlueButton) {
-			entities::press_blue_button(s);
-		}
-		if matches!(terrain, Terrain::BearTrap) {
-			ent.trapped = true;
-		}
+	if ent.step_dir.is_some() && s.time >= ent.step_time + ent.step_spd {
 
 		ent.step_dir = None;
 	}
 
-	if !ent.trapped && s.time >= ent.step_time + ent.step_spd {
+	if ent.trapped || ent.hidden {
+		return;
+	}
+	if s.time >= ent.step_time + ent.step_spd {
 		if let Some(face_dir) = ent.face_dir {
 			if try_move(s, ent, face_dir) { }
 			else if try_move(s, ent, face_dir.turn_around()) { }
@@ -53,6 +44,7 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	let flags = CanMoveFlags {
 		gravel: false,
 		fire: true,
+		dirt: false,
 	};
 	if !s.field.can_move(ent.pos, move_dir, &flags) {
 		return false;
@@ -71,7 +63,7 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	}
 
 	// s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
-	s.events.push(GameEvent::EntityStep { handle: ent.handle });
+	s.events.push(GameEvent::EntityStep { entity: ent.handle });
 	ent.face_dir = Some(move_dir);
 	ent.step_dir = Some(move_dir);
 	ent.step_time = s.time;
@@ -79,7 +71,4 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	return true;
 }
 
-fn interact(_s: &mut GameState, _ent: &mut Entity, _ictx: &mut InteractContext) {
-}
-
-static FUNCS: EntityFuncs = EntityFuncs { think, interact };
+static FUNCS: EntityFuncs = EntityFuncs { think };

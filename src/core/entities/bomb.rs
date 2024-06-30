@@ -1,26 +1,27 @@
 use super::*;
 
-pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
+pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 	let handle = s.ents.alloc();
 	s.ents.insert(Entity {
 		funcs: &FUNCS,
 		handle,
-		kind: data.kind,
-		pos: data.pos,
-		face_dir: data.face_dir,
+		kind: args.kind,
+		pos: args.pos,
+		face_dir: args.face_dir,
 		step_dir: None,
 		step_spd: 0,
 		step_time: 0,
 		trapped: false,
+		hidden: false,
 		remove: false,
 	});
 	return handle;
 }
 
-fn think(_s: &mut GameState, _ent: &mut Entity) {
-}
-
-fn interact(_s: &mut GameState, _ent: &mut Entity, _ictx: &mut InteractContext) {
+fn think(s: &mut GameState, ent: &mut Entity) {
+	if s.ents.get(s.ps.entity).map(|e| e.pos) == Some(ent.pos) {
+		ps_action(s, PlayerAction::Death);
+	}
 }
 
 pub fn check(ent: &mut Entity, s: &mut GameState) -> bool {
@@ -37,4 +38,4 @@ pub fn check(ent: &mut Entity, s: &mut GameState) -> bool {
 	return false;
 }
 
-static FUNCS: EntityFuncs = EntityFuncs { think, interact };
+static FUNCS: EntityFuncs = EntityFuncs { think };

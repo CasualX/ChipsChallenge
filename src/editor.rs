@@ -19,7 +19,7 @@ pub struct EditorInput {
 // #[derive(Copy, Clone)]
 enum Tool {
 	Terrain(core::Terrain),
-	Entity(core::SpawnData),
+	Entity(core::EntityArgs),
 	Erase,
 }
 impl Default for Tool {
@@ -40,6 +40,7 @@ pub struct EditorGame {
 impl EditorGame {
 	pub fn init(&mut self, resources: Resources) {
 		self.game.resources = resources;
+		self.game.tiles = &TILES_EDIT;
 	}
 	pub fn load_level(&mut self, json: &str) {
 		self.game.load_level(json);
@@ -71,7 +72,7 @@ impl EditorGame {
 				data,
 				legend,
 			},
-			entities: self.game.game.ents.map.values().map(|ent| core::SpawnData {
+			entities: self.game.game.ents.map.values().map(|ent| core::EntityArgs {
 				kind: ent.kind,
 				pos: ent.pos,
 				face_dir: ent.face_dir,
@@ -121,9 +122,9 @@ impl EditorGame {
 			// Some('X') => self.tool = Tool::Terrain(Terrain::CloneMachine),
 			// Some('Y') => self.tool = Tool::Terrain(Terrain::ToggleWall),
 			// Some('Z') => self.tool = Tool::Terrain(core::Terrain::ToggleWall),
-			Some('X') => self.tool = Tool::Entity(core::SpawnData { kind: core::EntityKind::Teeth, pos: Vec2::ZERO, face_dir: Some(core::Dir::Up) }),
-			Some('Y') => self.tool = Tool::Entity(core::SpawnData { kind: core::EntityKind::Chip, pos: Vec2::ZERO, face_dir: None }),
-			Some('Z') => self.tool = Tool::Entity(core::SpawnData { kind: core::EntityKind::Socket, pos: Vec2::ZERO, face_dir: None }),
+			Some('X') => self.tool = Tool::Entity(core::EntityArgs { kind: core::EntityKind::Teeth, pos: Vec2::ZERO, face_dir: Some(core::Dir::Up) }),
+			Some('Y') => self.tool = Tool::Entity(core::EntityArgs { kind: core::EntityKind::Chip, pos: Vec2::ZERO, face_dir: None }),
+			Some('Z') => self.tool = Tool::Entity(core::EntityArgs { kind: core::EntityKind::Socket, pos: Vec2::ZERO, face_dir: None }),
 			_ => (),
 		}
 
@@ -174,7 +175,7 @@ impl EditorGame {
 						}
 						Tool::Entity(e) => {
 							self.game.game.events.clear();
-							core::create(&mut self.game.game, &core::SpawnData { kind: e.kind, pos: tile_pos, face_dir: e.face_dir });
+							core::create(&mut self.game.game, &core::EntityArgs { kind: e.kind, pos: tile_pos, face_dir: e.face_dir });
 							self.game.sync(&self.game.game.events.clone());
 						}
 						Tool::Erase => {
@@ -233,7 +234,7 @@ impl EditorGame {
 
 			match self.tool {
 				Tool::Terrain(index) => {
-					render::draw_tile(&mut cv, index, p);
+					render::draw_tile(&mut cv, index, p, &self.game.tiles);
 				}
 				_ => (),
 			}

@@ -351,8 +351,8 @@ fn draw(cv: &mut shade::d2::Canvas<Vertex, Uniform>, pos: Vec3<f32>, sprite: Spr
 	}
 }
 
-pub fn draw_tile(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, terrain: core::Terrain, pos: Vec3<f32>) {
-	let tile = TILES_PLAY[terrain as usize];
+pub fn draw_tile(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, terrain: core::Terrain, pos: Vec3<f32>, tiles: &[TileGfx]) {
+	let tile = tiles[terrain as usize];
 	draw(cv, pos, tile.sprite, tile.model, 1.0, Transform3::IDENTITY);
 }
 
@@ -365,7 +365,7 @@ pub fn field(cv: &mut shade::d2::Canvas::<render::Vertex, render::Uniform>, stat
 	for y in 0..field.height {
 		for x in 0..field.width {
 			let tile = field.get_terrain(Vec2(x, y));
-			let tile = TILES_PLAY[tile as usize];
+			let tile = state.tiles[tile as usize];
 			if tile.sprite == Sprite::Blank || tile.model == Model::Empty {
 				continue;
 			}

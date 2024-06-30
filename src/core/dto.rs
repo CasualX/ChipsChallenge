@@ -16,12 +16,14 @@ pub struct LevelDto {
 	pub time: i32,
 	pub chips: i32,
 	pub map: MapDto,
-	pub entities: Vec<SpawnData>,
+	pub entities: Vec<EntityArgs>,
 	pub connections: Vec<Connection>,
 }
 
 impl GameState {
 	pub fn load(&mut self, json: &str) {
+		self.time = 0;
+
 		let ld: dto::LevelDto = serde_json::from_str(json).unwrap();
 		self.field.name = ld.name;
 		self.field.hint = ld.hint;
@@ -32,10 +34,6 @@ impl GameState {
 		self.field.height = ld.map.height;
 		self.field.terrain.clear();
 		self.field.conns = ld.connections;
-
-		for data in &ld.entities {
-			entities::create(self, data);
-		}
 
 		assert!(ld.map.width > 0, "Invalid map width");
 		assert!(ld.map.height > 0, "Invalid map height");
@@ -57,5 +55,11 @@ impl GameState {
 				}
 			}
 		}
+
+		for data in &ld.entities {
+			entities::create(self, data);
+		}
+
+		update_hidden_entities(self);
 	}
 }

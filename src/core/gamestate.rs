@@ -15,9 +15,17 @@ impl GameState {
 		self.events.clear();
 		self.time += 1;
 
+		ps_update_moves(self, input);
+
 		// Let entities think
 		for handle in self.ents.map.keys().cloned().collect::<Vec<_>>() {
 			if let Some(mut ent) = self.ents.remove(handle) {
+
+				let terrain = self.field.get_terrain(ent.pos);
+				if matches!(terrain, Terrain::BearTrap) {
+					ent.trapped = !is_brown_button_pressed(self, ent.pos);
+				}
+
 				(ent.funcs.think)(self, &mut ent);
 				self.ents.insert(ent);
 			}
@@ -26,7 +34,7 @@ impl GameState {
 		// Remove entities marked for removal
 		self.ents.map.retain(|_, ent| {
 			if ent.remove {
-				self.events.push(GameEvent::EntityRemoved { handle: ent.handle });
+				self.events.push(GameEvent::EntityRemoved { entity: ent.handle });
 			}
 			!ent.remove
 		});
