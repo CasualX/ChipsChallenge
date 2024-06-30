@@ -20,6 +20,8 @@ pub enum Model {
 pub enum Animation {
 	None,
 	Rise,
-	Fade,
+	FadeOut,
+	FadeIn,
 	Fall,
+	Raise,
 }

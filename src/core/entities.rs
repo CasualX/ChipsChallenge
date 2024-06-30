@@ -1,24 +1,27 @@
 use super::*;
 
-pub const BASE_SPD: Time = 12;
+const BASE_SPD: Time = 12;
 
-pub mod player;
-pub mod pickup;
-pub mod socket;
-pub mod block;
-pub mod bug;
-pub mod tank;
-pub mod bomb;
-pub mod pinkball;
-pub mod fireball;
-pub mod thief;
-pub mod glider;
+mod player;
+mod pickup;
+mod socket;
+mod block;
+mod bug;
+mod tank;
+mod bomb;
+mod pinkball;
+mod fireball;
+mod thief;
+mod glider;
+mod walker;
+mod teeth;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Copy, Clone, Debug)]
 pub struct SpawnData {
 	pub kind: EntityKind,
 	pub pos: Vec2i,
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub face_dir: Option<Dir>,
 }
 
@@ -42,6 +45,8 @@ pub fn create(s: &mut GameState, data: &SpawnData) -> EntityHandle {
 		EntityKind::PinkBall => pinkball::create(s, data),
 		EntityKind::FireBall => fireball::create(s, data),
 		EntityKind::Glider => glider::create(s, data),
+		EntityKind::Walker => walker::create(s, data),
+		EntityKind::Teeth => teeth::create(s, data),
 		EntityKind::Bomb => bomb::create(s, data),
 	};
 	s.events.push(GameEvent::EntityCreated { handle });

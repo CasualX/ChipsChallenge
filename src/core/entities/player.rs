@@ -54,11 +54,6 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 		ent.step_dir = None;
 	}
 
-	// Turn BlueFake to floor when stepping through it
-	if matches!(terrain, Terrain::BlueFake) {
-		s.field.set_terrain(ent.pos, Terrain::Floor);
-	}
-
 	let action = match terrain {
 		Terrain::Water => PlayerAction::Swim,
 		Terrain::Ice | Terrain::IceNE | Terrain::IceNW | Terrain::IceSE | Terrain::IceSW => if s.ps.ice_skates { PlayerAction::Skate } else { PlayerAction::Slide },
@@ -71,7 +66,7 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 	}
 
 	// Wait until movement is cleared before accepting new input
-	if ent.step_dir.is_none() {
+	if s.time >= ent.step_time + ent.step_spd {
 
 		// Turn dirt to floor after stepping on it
 		if matches!(terrain, Terrain::Dirt) {
@@ -81,19 +76,8 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 		if matches!(terrain, Terrain::Exit) && orig_dir.is_some() {
 			s.ps.action = PlayerAction::Win;
 			s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
-			s.events.push(GameEvent::GameWin);
+			s.events.push(GameEvent::GameWin { handle: ent.handle });
 			return;
-		}
-
-		// Set the player's move speed
-		if !s.ps.suction_boots && matches!(terrain, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
-			ent.step_spd = BASE_SPD / 2;
-		}
-		else if !s.ps.ice_skates && matches!(terrain, Terrain::Ice | Terrain::IceNE | Terrain::IceSE | Terrain::IceNW | Terrain::IceSW) {
-			ent.step_spd = BASE_SPD / 2;
-		}
-		else {
-			ent.step_spd = BASE_SPD;
 		}
 
 		'end_move: {
@@ -258,8 +242,12 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 			s.field.set_terrain(new_pos, Terrain::Wall);
 			s.events.push(GameEvent::BlueWallBumped { pos: new_pos });
 		}
+		Terrain::BlueFake => {
+			s.field.set_terrain(new_pos, Terrain::Floor);
+			s.events.push(GameEvent::BlueWallCleared { pos: new_pos });
+		}
 		Terrain::HiddenWall => {
-			s.field.set_terrain(new_pos, Terrain::Wall);
+			s.field.set_terrain(new_pos, Terrain::HiddenWallRevealed);
 			s.events.push(GameEvent::HiddenWallBumped { pos: new_pos });
 		}
 		_ => {}
@@ -298,13 +286,29 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 	if success {
 		let terrain = s.field.get_terrain(ent.pos);
 		if matches!(terrain, Terrain::RecessedWall) {
-			s.field.set_terrain(ent.pos, Terrain::Wall);
+			s.events.push(GameEvent::RecessedWallRaised { pos: ent.pos });
+			s.field.set_terrain(ent.pos, Terrain::RaisedWall);
 		}
 
 		ent.step_dir = Some(move_dir);
 		ent.pos = new_pos;
+
+		// Set the player's move speed
+		if !s.ps.suction_boots && matches!(terrain, Terrain::ForceW | Terrain::ForceE | Terrain::ForceN | Terrain::ForceS) {
+			ent.step_spd = BASE_SPD / 2;
+		}
+		else if !s.ps.ice_skates && matches!(terrain, Terrain::Ice | Terrain::IceNE | Terrain::IceSE | Terrain::IceNW | Terrain::IceSW) {
+			ent.step_spd = BASE_SPD / 2;
+		}
+		else {
+			ent.step_spd = BASE_SPD;
+		}
+
 		s.ps.steps += 1;
 		s.events.push(GameEvent::EntityStep { handle: ent.handle });
+	}
+	else {
+		ent.step_spd = BASE_SPD / 2;
 	}
 
 	return success;

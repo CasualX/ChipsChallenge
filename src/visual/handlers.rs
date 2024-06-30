@@ -43,7 +43,7 @@ pub fn entity_removed(ctx: &mut VisualState, handle: core::EntityHandle) {
 		obj.mover = MoveType::Vel(MoveVel { vel: Vec3::new(0.0, 0.0, 200.0) });
 	}
 	else if faded {
-		obj.anim = Animation::Fade;
+		obj.anim = Animation::FadeOut;
 		obj.mover = MoveType::Vel(MoveVel { vel: Vec3::new(0.0, 0.0, 0.0) });
 	}
 	else {
@@ -95,6 +95,8 @@ pub fn create_fire(ctx: &mut VisualState, pos: Vec3<f32>) {
 fn model_for_ent(ent: &core::Entity) -> Model {
 	match ent.kind {
 		core::EntityKind::Block => Model::Wall,
+		core::EntityKind::Tank => Model::ReallyFlatSprite,
+		core::EntityKind::Bug => Model::FlatSprite,
 		_ => Model::Sprite,
 	}
 }
@@ -157,6 +159,18 @@ fn sprite_for_ent(ent: &core::Entity, pl: &core::PlayerState) -> Sprite {
 			Some(core::Dir::Right) => Sprite::GliderRight,
 			_ => Sprite::GliderUp,
 		},
+		core::EntityKind::Walker => match ent.face_dir {
+			Some(core::Dir::Up) | Some(core::Dir::Down) => Sprite::WalkerUpDown,
+			Some(core::Dir::Left) | Some(core::Dir::Right) => Sprite::WalkerLeftRight,
+			_ => Sprite::WalkerUpDown,
+		},
+		core::EntityKind::Teeth => match ent.face_dir {
+			Some(core::Dir::Up) => Sprite::TeethUp,
+			Some(core::Dir::Down) => Sprite::TeethDown,
+			Some(core::Dir::Left) => Sprite::TeethLeft,
+			Some(core::Dir::Right) => Sprite::TeethRight,
+			_ => Sprite::TeethUp,
+		},
 		core::EntityKind::Bomb => Sprite::Bomb,
 	}
 }
@@ -169,8 +183,8 @@ pub fn item_pickup(ctx: &mut VisualState, ehandle: core::EntityHandle) {
 	obj.mover = MoveType::Vel(MoveVel { vel: Vec3::new(0.0, 0.0, 200.0) });
 }
 
-pub fn game_win(ctx: &mut VisualState) {
-	let Some(&obj_handle) = ctx.objects.lookup.get(&ctx.game.ps.entity) else { return };
+pub fn game_win(ctx: &mut VisualState, handle: core::EntityHandle) {
+	let Some(&obj_handle) = ctx.objects.lookup.get(&handle) else { return };
 	let Some(obj) = ctx.objects.get_mut(obj_handle) else { return };
 
 	obj.sprite = Sprite::PlayerCheer;
@@ -192,6 +206,63 @@ pub fn lock_removed(ctx: &mut VisualState, pos: Vec2<i32>, key: core::KeyColor) 
 		},
 		model: Model::Wall,
 		anim: Animation::Fall,
+		atime: 0.0,
+		alpha: 1.0,
+		vis: true,
+		live: true,
+	};
+	ctx.objects.insert(obj);
+}
+
+pub fn blue_wall_cleared(ctx: &mut VisualState, pos: Vec2<i32>) {
+	let handle = ctx.objects.alloc();
+	let obj = Object {
+		handle,
+		entity_handle: core::EntityHandle::default(),
+		entity_kind: core::EntityKind::RedKey,
+		pos: Vec3::new(pos.x as f32 * 32.0, pos.y as f32 * 32.0, 0.0),
+		mover: MoveType::Vel(MoveVel { vel: Vec3(0.0, 0.0, 0.0) }),
+		sprite: Sprite::BlueWall,
+		model: Model::Wall,
+		anim: Animation::FadeOut,
+		atime: 0.0,
+		alpha: 1.0,
+		vis: true,
+		live: true,
+	};
+	ctx.objects.insert(obj);
+}
+
+pub fn hidden_wall_bumped(ctx: &mut VisualState, pos: Vec2<i32>) {
+	let handle = ctx.objects.alloc();
+	let obj = Object {
+		handle,
+		entity_handle: core::EntityHandle::default(),
+		entity_kind: core::EntityKind::RedKey,
+		pos: Vec3::new(pos.x as f32 * 32.0, pos.y as f32 * 32.0, 0.0),
+		mover: MoveType::Vel(MoveVel { vel: Vec3(0.0, 0.0, 0.0) }),
+		sprite: Sprite::Wall,
+		model: Model::Wall,
+		anim: Animation::FadeIn,
+		atime: 0.0,
+		alpha: 1.0,
+		vis: true,
+		live: true,
+	};
+	ctx.objects.insert(obj);
+}
+
+pub fn recessed_wall_raised(ctx: &mut VisualState, pos: Vec2<i32>) {
+	let handle = ctx.objects.alloc();
+	let obj = Object {
+		handle,
+		entity_handle: core::EntityHandle::default(),
+		entity_kind: core::EntityKind::RedKey,
+		pos: Vec3::new(pos.x as f32 * 32.0, pos.y as f32 * 32.0, 0.0),
+		mover: MoveType::Vel(MoveVel { vel: Vec3(0.0, 0.0, 0.0) }),
+		sprite: Sprite::Wall,
+		model: Model::Wall,
+		anim: Animation::Raise,
 		atime: 0.0,
 		alpha: 1.0,
 		vis: true,

@@ -59,7 +59,7 @@ impl Object {
 			},
 		}
 
-		if matches!(self.anim, Animation::Rise | Animation::Fade) {
+		if matches!(self.anim, Animation::Rise | Animation::FadeOut) {
 			if self.atime == 0.0 {
 				self.atime = ctx.time;
 			}
@@ -69,6 +69,15 @@ impl Object {
 				self.live = false;
 			}
 		}
+		if matches!(self.anim, Animation::FadeIn) {
+			if self.atime == 0.0 {
+				self.atime = ctx.time;
+			}
+			self.alpha = f32::min(1.0, (ctx.time - self.atime) * 10.0);
+			if self.alpha == 1.0 {
+				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
+			}
+		}
 		if matches!(self.anim, Animation::Fall) {
 			if self.atime == 0.0 {
 				self.atime = ctx.time;
@@ -76,6 +85,17 @@ impl Object {
 			if ctx.time > self.atime + 0.5 {
 				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
 				self.live = false;
+			}
+		}
+		if matches!(self.anim, Animation::Raise) {
+			if self.atime == 0.0 {
+				self.atime = ctx.time;
+				self.mover = MoveType::Vel(MoveVel { vel: Vec3(0.0, 0.0, 200.0) });
+				self.pos.z = -20.0;
+			}
+			if self.pos.z >= 0.0 {
+				self.pos.z = 0.0;
+				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
 			}
 		}
 	}

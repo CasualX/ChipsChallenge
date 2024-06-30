@@ -3,7 +3,7 @@ use cvmath::Vec2i;
 
 mod connection;
 mod dir;
-mod dto;
+pub mod dto;
 mod entity;
 mod entities;
 mod entitymap;

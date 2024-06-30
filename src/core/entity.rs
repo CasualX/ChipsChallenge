@@ -24,6 +24,8 @@ pub enum EntityKind {
 	PinkBall,
 	FireBall,
 	Glider,
+	Walker,
+	Teeth,
 	Bomb,
 }
 

@@ -65,6 +65,8 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 		}
 	}
 
+	// s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
+	s.events.push(GameEvent::EntityStep { handle: ent.handle });
 	ent.face_dir = Some(move_dir);
 	ent.step_dir = Some(move_dir);
 	ent.step_time = s.time;

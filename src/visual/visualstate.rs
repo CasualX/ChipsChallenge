@@ -31,7 +31,7 @@ impl VisualState {
 		self.game.tick(input);
 		self.sync(&self.game.events.clone());
 	}
-	fn sync(&mut self, events: &Vec<core::GameEvent>) {
+	pub fn sync(&mut self, events: &Vec<core::GameEvent>) {
 		for ev in events {
 			println!("Event: {:?}", ev);
 			match ev {
@@ -42,7 +42,10 @@ impl VisualState {
 				&core::GameEvent::PlayerActionChanged { handle } => entity_face_dir(self, handle),
 				&core::GameEvent::ItemPickup { handle, .. } => item_pickup(self, handle),
 				&core::GameEvent::LockRemoved { pos, key } => lock_removed(self, pos, key),
-				&core::GameEvent::GameWin => game_win(self),
+				&core::GameEvent::BlueWallCleared { pos } => blue_wall_cleared(self, pos),
+				&core::GameEvent::HiddenWallBumped { pos } => hidden_wall_bumped(self, pos),
+				&core::GameEvent::RecessedWallRaised { pos } => recessed_wall_raised(self, pos),
+				&core::GameEvent::GameWin { handle } => game_win(self, handle),
 				_ => {}
 			}
 		}

@@ -39,5 +39,6 @@ pub enum GameEvent {
 	BlueWallBumped { pos: Vec2i },
 	BlueWallCleared { pos: Vec2i },
 	HiddenWallBumped { pos: Vec2i },
-	GameWin,
+	RecessedWallRaised { pos: Vec2i },
+	GameWin { handle: EntityHandle },
 }

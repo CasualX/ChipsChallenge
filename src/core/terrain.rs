@@ -39,6 +39,7 @@ pub enum Terrain {
 	PanelE,
 	PanelSE,
 	HiddenWall,
+	HiddenWallRevealed,
 	InvisWall,
 	BlueWall,
 	BlueFake,
@@ -49,6 +50,7 @@ pub enum Terrain {
 	Teleport,
 	BearTrap,
 	RecessedWall,
+	RaisedWall,
 }
 
 impl Terrain {
@@ -87,6 +89,7 @@ impl Terrain {
 			Terrain::PanelE => PANEL_E,
 			Terrain::PanelSE => PANEL_S | PANEL_E,
 			Terrain::HiddenWall => SOLID_WALL,
+			Terrain::HiddenWallRevealed => SOLID_WALL,
 			Terrain::InvisWall => SOLID_WALL,
 			Terrain::BlueWall => SOLID_WALL,
 			Terrain::BlueFake => 0,
@@ -97,11 +100,12 @@ impl Terrain {
 			Terrain::Teleport => 0,
 			Terrain::BearTrap => 0,
 			Terrain::RecessedWall => 0,
+			Terrain::RaisedWall => SOLID_WALL,
 		}
 	}
 }
 
-pub static ALL_TERRAIN: [Terrain; 43] = [
+pub static ALL_TERRAIN: [Terrain; 45] = [
 	Terrain::Blank,
 	Terrain::Floor,
 	Terrain::Wall,
@@ -135,6 +139,7 @@ pub static ALL_TERRAIN: [Terrain; 43] = [
 	Terrain::PanelE,
 	Terrain::PanelSE,
 	Terrain::HiddenWall,
+	Terrain::HiddenWallRevealed,
 	Terrain::InvisWall,
 	Terrain::BlueWall,
 	Terrain::BlueFake,
@@ -145,4 +150,5 @@ pub static ALL_TERRAIN: [Terrain; 43] = [
 	Terrain::Teleport,
 	Terrain::BearTrap,
 	Terrain::RecessedWall,
+	Terrain::RaisedWall,
 ];

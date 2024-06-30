@@ -10,7 +10,7 @@ mod objectmap;
 mod sprite;
 mod visualstate;
 mod resources;
-mod render;
+pub mod render;
 mod tile;
 
 pub use self::camera::*;

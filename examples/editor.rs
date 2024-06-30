@@ -40,8 +40,8 @@ fn main() {
 
 	let mut past_now = time::Instant::now();
 
-	let mut editor = chipgame::EditorGame::default();
-	let mut input = chipgame::EditorInput::default();
+	let mut editor = chipgame::editor::EditorGame::default();
+	let mut input = chipgame::editor::EditorInput::default();
 	editor.load_level(&fs::read_to_string(&file_path).unwrap());
 
 	// Main loop
@@ -134,7 +134,7 @@ fn main() {
 
 		input.screen_size = cvmath::Vec2(size.width as i32, size.height as i32);
 
-		editor.init(chipgame::Resources {
+		editor.init(chipgame::visual::Resources {
 			tileset,
 			tileset_size: [tex_info.width, tex_info.height].into(),
 			shader,

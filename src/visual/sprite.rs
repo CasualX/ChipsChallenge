@@ -89,6 +89,12 @@ pub enum Sprite {
 	GliderLeft,
 	GliderDown,
 	GliderRight,
+	WalkerUpDown,
+	WalkerLeftRight,
+	TeethUp,
+	TeethLeft,
+	TeethDown,
+	TeethRight,
 }
 
 impl Sprite {
@@ -179,6 +185,12 @@ impl Sprite {
 			Sprite::GliderLeft => Vec2(5, 1),
 			Sprite::GliderDown => Vec2(5, 2),
 			Sprite::GliderRight => Vec2(5, 3),
+			Sprite::TeethUp => Vec2(5, 4),
+			Sprite::TeethLeft => Vec2(5, 5),
+			Sprite::TeethDown => Vec2(5, 6),
+			Sprite::TeethRight => Vec2(5, 7),
+			Sprite::WalkerUpDown => Vec2(5, 8),
+			Sprite::WalkerLeftRight => Vec2(5, 9),
 		}
 	}
 }

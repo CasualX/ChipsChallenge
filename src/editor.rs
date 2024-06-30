@@ -1,6 +1,7 @@
-use dto::EntityDto;
-
-use super::*;
+use std::collections::HashMap;
+use crate::visual::*;
+use crate::core;
+use cvmath::*;
 
 #[derive(Clone, Default)]
 pub struct EditorInput {
@@ -17,28 +18,28 @@ pub struct EditorInput {
 
 // #[derive(Copy, Clone)]
 enum Tool {
-	Terrain(Terrain),
-	Entity(dto::EntityDto),
+	Terrain(core::Terrain),
+	Entity(core::SpawnData),
 	Erase,
 }
 impl Default for Tool {
 	fn default() -> Self {
-		Tool::Terrain(Terrain::Floor)
+		Tool::Terrain(core::Terrain::Floor)
 	}
 }
 
 #[derive(Default)]
 pub struct EditorGame {
-	game: Game,
+	game: VisualState,
 	input: EditorInput,
 	tool: Tool,
 	tile_pos: Option<Vec2<i32>>,
-	conn: Connection,
+	conn: core::Connection,
 }
 
 impl EditorGame {
 	pub fn init(&mut self, resources: Resources) {
-		self.game.init(resources);
+		self.game.resources = resources;
 	}
 	pub fn load_level(&mut self, json: &str) {
 		self.game.load_level(json);
@@ -46,90 +47,90 @@ impl EditorGame {
 	pub fn save_level(&self) -> String {
 		let mut legend_map = HashMap::new();
 		let mut legend = Vec::new();
-		legend_map.insert(Terrain::Blank, 0); legend.push(Terrain::Blank);
-		legend_map.insert(Terrain::Floor, 1); legend.push(Terrain::Floor);
+		legend_map.insert(core::Terrain::Blank, 0); legend.push(core::Terrain::Blank);
+		legend_map.insert(core::Terrain::Floor, 1); legend.push(core::Terrain::Floor);
 		let mut idx = 2;
-		for &terrain in self.game.field.map.iter() {
+		for &terrain in self.game.game.field.terrain.iter() {
 			if !legend_map.contains_key(&terrain) {
 				legend_map.insert(terrain, idx);
 				legend.push(terrain);
 				idx += 1;
 			}
 		}
-		let data = self.game.field.map.iter().map(|&terrain| legend_map[&terrain]).collect();
+		let data = self.game.game.field.terrain.iter().map(|&terrain| legend_map[&terrain]).collect();
 
-		let dto = dto::LevelDto {
-			name: self.game.field.name.clone(),
-			hint: self.game.field.hint.clone(),
-			password: self.game.field.password.clone(),
-			time: self.game.field.time_limit,
-			chips: self.game.field.chips,
-			map: dto::MapDto {
-				width: self.game.field.width,
-				height: self.game.field.height,
-				strings: vec![],
+		let dto = core::dto::LevelDto {
+			name: self.game.game.field.name.clone(),
+			hint: self.game.game.field.hint.clone(),
+			password: self.game.game.field.password.clone(),
+			time: self.game.game.field.time,
+			chips: self.game.game.field.chips,
+			map: core::dto::MapDto {
+				width: self.game.game.field.width,
+				height: self.game.game.field.height,
 				data,
 				legend,
 			},
-			entities: self.game.entities.map.values().map(|ent| dto::EntityDto {
+			entities: self.game.game.ents.map.values().map(|ent| core::SpawnData {
 				kind: ent.kind,
 				pos: ent.pos,
 				face_dir: ent.face_dir,
 			}).collect(),
-			connections: self.game.field.conns.clone(),
+			connections: self.game.game.field.conns.clone(),
 		};
 		serde_json::to_string(&dto).unwrap()
 	}
 	pub fn render(&mut self, g: &mut shade::Graphics, input: &EditorInput) {
 		if input.left {
-			self.game.cam.target.x -= 5.0;
+			self.game.camera.target.x -= 5.0;
 		}
 		if input.right {
-			self.game.cam.target.x += 5.0;
+			self.game.camera.target.x += 5.0;
 		}
 		if input.up {
-			self.game.cam.target.y -= 5.0;
+			self.game.camera.target.y -= 5.0;
 		}
 		if input.down {
-			self.game.cam.target.y += 5.0;
+			self.game.camera.target.y += 5.0;
 		}
 
 		match input.chr {
-			Some('A') => self.tool = Tool::Terrain(Terrain::Blank),
-			Some('B') => self.tool = Tool::Terrain(Terrain::Floor),
-			Some('C') => self.tool = Tool::Terrain(Terrain::Wall),
-			Some('D') => self.tool = Tool::Terrain(Terrain::BlueLock),
-			Some('E') => self.tool = Tool::Terrain(Terrain::RedLock),
-			Some('F') => self.tool = Tool::Terrain(Terrain::GreenLock),
-			Some('G') => self.tool = Tool::Terrain(Terrain::YellowLock),
-			Some('H') => self.tool = Tool::Terrain(Terrain::Hint),
-			Some('I') => self.tool = Tool::Terrain(Terrain::Exit),
-			Some('J') => self.tool = Tool::Terrain(Terrain::Water),
-			Some('K') => self.tool = Tool::Terrain(Terrain::Fire),
-			Some('L') => self.tool = Tool::Terrain(Terrain::Dirt),
-			Some('M') => self.tool = Tool::Terrain(Terrain::Gravel),
-			Some('N') => self.tool = Tool::Terrain(Terrain::Ice),
-			Some('O') => self.tool = Tool::Terrain(Terrain::IceNW),
-			Some('P') => self.tool = Tool::Terrain(Terrain::IceNE),
-			Some('Q') => self.tool = Tool::Terrain(Terrain::IceSW),
-			Some('R') => self.tool = Tool::Terrain(Terrain::IceSE),
-			Some('S') => self.tool = Tool::Terrain(Terrain::ForceN),
-			Some('T') => self.tool = Tool::Terrain(Terrain::ForceW),
-			Some('U') => self.tool = Tool::Terrain(Terrain::ForceS),
-			Some('V') => self.tool = Tool::Terrain(Terrain::ForceE),
-			Some('W') => self.tool = Tool::Terrain(Terrain::RedButton),
+			Some('A') => self.tool = Tool::Terrain(core::Terrain::Blank),
+			Some('B') => self.tool = Tool::Terrain(core::Terrain::Floor),
+			Some('C') => self.tool = Tool::Terrain(core::Terrain::Wall),
+			Some('D') => self.tool = Tool::Terrain(core::Terrain::BlueLock),
+			Some('E') => self.tool = Tool::Terrain(core::Terrain::RedLock),
+			Some('F') => self.tool = Tool::Terrain(core::Terrain::GreenLock),
+			Some('G') => self.tool = Tool::Terrain(core::Terrain::YellowLock),
+			Some('H') => self.tool = Tool::Terrain(core::Terrain::Hint),
+			Some('I') => self.tool = Tool::Terrain(core::Terrain::Exit),
+			Some('J') => self.tool = Tool::Terrain(core::Terrain::Water),
+			Some('K') => self.tool = Tool::Terrain(core::Terrain::Fire),
+			Some('L') => self.tool = Tool::Terrain(core::Terrain::Dirt),
+			Some('M') => self.tool = Tool::Terrain(core::Terrain::Gravel),
+			Some('N') => self.tool = Tool::Terrain(core::Terrain::Ice),
+			Some('O') => self.tool = Tool::Terrain(core::Terrain::IceNW),
+			Some('P') => self.tool = Tool::Terrain(core::Terrain::IceNE),
+			Some('Q') => self.tool = Tool::Terrain(core::Terrain::IceSW),
+			Some('R') => self.tool = Tool::Terrain(core::Terrain::IceSE),
+			Some('S') => self.tool = Tool::Terrain(core::Terrain::ForceN),
+			Some('T') => self.tool = Tool::Terrain(core::Terrain::ForceW),
+			Some('U') => self.tool = Tool::Terrain(core::Terrain::ForceS),
+			Some('V') => self.tool = Tool::Terrain(core::Terrain::ForceE),
+			Some('W') => self.tool = Tool::Terrain(core::Terrain::GreenButton),
 			// Some('X') => self.tool = Tool::Terrain(Terrain::CloneMachine),
 			// Some('Y') => self.tool = Tool::Terrain(Terrain::ToggleWall),
-			// Some('Z') => self.tool = Tool::Terrain(Terrain::BearTrap),
-			// Some('X') => self.tool = Tool::Entity(dto::EntityDto { kind: EntityKind::Glider, pos: Vec2::ZERO, face_dir: Some(Dir::Up) }),
-			// Some('Y') => self.tool = Tool::Entity(dto::EntityDto { kind: EntityKind::Tank, pos: Vec2::ZERO, face_dir: Some(Dir::Right) }),
-			// Some('Z') => self.tool = Tool::Entity(dto::EntityDto { kind: EntityKind::FireBoots, pos: Vec2::ZERO, face_dir: None }),
+			// Some('Z') => self.tool = Tool::Terrain(core::Terrain::ToggleWall),
+			Some('X') => self.tool = Tool::Entity(core::SpawnData { kind: core::EntityKind::Teeth, pos: Vec2::ZERO, face_dir: Some(core::Dir::Up) }),
+			Some('Y') => self.tool = Tool::Entity(core::SpawnData { kind: core::EntityKind::Chip, pos: Vec2::ZERO, face_dir: None }),
+			Some('Z') => self.tool = Tool::Entity(core::SpawnData { kind: core::EntityKind::Socket, pos: Vec2::ZERO, face_dir: None }),
 			_ => (),
 		}
 
-		self.game.cam.eye_offset = Vec3::<f32>(0.0, 8.0 * 32.0, 400.0) * 2.0;
+		self.game.camera.eye_offset = Vec3::<f32>(0.0, 8.0 * 32.0, 400.0) * 2.0;
+		self.game.camera.object_h = None;
 
-		self.game.render(g);
+		self.game.draw(g);
 
 		let x = (input.mouse.x as f32 / input.screen_size.x as f32 - 0.5) * 2.0;
 		let y = (input.mouse.y as f32 / input.screen_size.y as f32 - 0.5) * -2.0;
@@ -145,11 +146,11 @@ impl EditorGame {
 		// let far = inv * Vec4::new(x, y, 1.0, 1.0);
 		// let dir = (far.hdiv() - near.hdiv()).normalize();
 
-		let x = x / self.game.cam.proj_mat.a11;
-		let y = y / self.game.cam.proj_mat.a22;
-		let dir = (self.game.cam.view_mat.inverse() * Vec4::new(x, y, -1.0, 1.0)).xyz().normalize();
+		let x = x / self.game.camera.proj_mat.a11;
+		let y = y / self.game.camera.proj_mat.a22;
+		let dir = (self.game.camera.view_mat.inverse() * Vec4::new(x, y, -1.0, 1.0)).xyz().normalize();
 
-		let ray = Ray::new(self.game.cam.target + self.game.cam.eye_offset, dir);
+		let ray = Ray::new(self.game.camera.target + self.game.camera.eye_offset, dir);
 		let plane = Plane::new(Vec3::Z, 0.0);
 		let mut hits = [TraceHit::default(); 2];
 		let mut mouse_pos = None;
@@ -169,17 +170,17 @@ impl EditorGame {
 				if let Some(tile_pos) = tile_pos {
 					match &self.tool {
 						&Tool::Terrain(terrain) => {
-							self.game.field.set_terrain(tile_pos, terrain);
+							self.game.game.field.set_terrain(tile_pos, terrain);
 						}
 						Tool::Entity(e) => {
-							let mut ctx = SpawnContext::begin(&mut self.game.objects, &mut self.game.entities);
-							entities::create(&mut ctx, &EntityDto { kind: e.kind, pos: tile_pos, face_dir: e.face_dir });
-							ctx.end(&mut self.game.objects, &mut self.game.entities);
+							self.game.game.events.clear();
+							core::create(&mut self.game.game, &core::SpawnData { kind: e.kind, pos: tile_pos, face_dir: e.face_dir });
+							self.game.sync(&self.game.game.events.clone());
 						}
 						Tool::Erase => {
-							let keys = self.game.entities.map.iter().filter_map(|(&k, v)| if v.pos == tile_pos { Some(k) } else { None }).collect::<Vec<_>>();
+							let keys = self.game.game.ents.map.iter().filter_map(|(&k, v)| if v.pos == tile_pos { Some(k) } else { None }).collect::<Vec<_>>();
 							for k in keys {
-								self.game.entities.map.remove(&k);
+								self.game.game.ents.map.remove(&k);
 							}
 						}
 					}
@@ -201,11 +202,11 @@ impl EditorGame {
 				self.conn.dest = tile_pos;
 
 				if self.conn.src != self.conn.dest {
-					if let Some(index) = self.game.field.conns.iter().position(|conn| conn == &self.conn) {
-						self.game.field.conns.remove(index);
+					if let Some(index) = self.game.game.field.conns.iter().position(|conn| conn == &self.conn) {
+						self.game.game.field.conns.remove(index);
 					}
 					else {
-						self.game.field.conns.push(self.conn);
+						self.game.game.field.conns.push(self.conn);
 					}
 				}
 			}
@@ -218,7 +219,7 @@ impl EditorGame {
 			cv.shader = self.game.resources.shader;
 			cv.depth_test = Some(shade::DepthTest::Less);
 			cv.viewport = cvmath::Rect::vec(cvmath::Vec2(input.screen_size.x as i32, input.screen_size.y as i32));
-			cv.push_uniform(render::Uniform { transform: self.game.cam.view_proj_mat, texture: self.game.resources.tileset, texture_size: self.game.resources.tileset_size.map(|c| c as f32).into() });
+			cv.push_uniform(render::Uniform { transform: self.game.camera.view_proj_mat, texture: self.game.resources.tileset, texture_size: self.game.resources.tileset_size.map(|c| c as f32).into() });
 			{
 				let mut x = cv.begin(shade::PrimType::Triangles, 4, 2);
 				x.add_indices_quad();
@@ -232,7 +233,7 @@ impl EditorGame {
 
 			match self.tool {
 				Tool::Terrain(index) => {
-					render::draw_tile(&mut cv, index, p, &self.game.field);
+					render::draw_tile(&mut cv, index, p);
 				}
 				_ => (),
 			}
@@ -249,9 +250,9 @@ impl EditorGame {
 			cv.shader = self.game.resources.shader;
 			cv.depth_test = Some(shade::DepthTest::Less);
 			cv.viewport = cvmath::Rect::vec(cvmath::Vec2(input.screen_size.x as i32, input.screen_size.y as i32));
-			cv.push_uniform(render::Uniform { transform: self.game.cam.view_proj_mat, texture: self.game.resources.tileset, texture_size: self.game.resources.tileset_size.map(|c| c as f32).into() });
+			cv.push_uniform(render::Uniform { transform: self.game.camera.view_proj_mat, texture: self.game.resources.tileset, texture_size: self.game.resources.tileset_size.map(|c| c as f32).into() });
 
-			for conn in &self.game.field.conns {
+			for conn in &self.game.game.field.conns {
 				let mut cv = cv.begin(shade::PrimType::Lines, 4, 3);
 				cv.add_index2(0, 1);
 				cv.add_index2(2, 1);
