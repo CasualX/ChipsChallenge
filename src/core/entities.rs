@@ -2,19 +2,22 @@ use super::*;
 
 const BASE_SPD: Time = 12;
 
-mod player;
-mod pickup;
-mod socket;
+mod blob;
 mod block;
-mod bug;
-mod tank;
 mod bomb;
-mod pinkball;
+mod bug;
+mod creature;
 mod fireball;
-mod thief;
 mod glider;
-mod walker;
+mod paramecium;
+mod pickup;
+mod player;
+mod pinkball;
+mod socket;
+mod tank;
 mod teeth;
+mod thief;
+mod walker;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Copy, Clone, Debug)]
@@ -40,14 +43,16 @@ pub fn create(s: &mut GameState, data: &EntityArgs) -> EntityHandle {
 		EntityKind::GreenKey => pickup::create(s, data),
 		EntityKind::YellowKey => pickup::create(s, data),
 		EntityKind::Thief => thief::create(s, data),
-		EntityKind::Bug => bug::create(s, data),
-		EntityKind::Tank => tank::create(s, data),
-		EntityKind::PinkBall => pinkball::create(s, data),
-		EntityKind::FireBall => fireball::create(s, data),
-		EntityKind::Glider => glider::create(s, data),
-		EntityKind::Walker => walker::create(s, data),
-		EntityKind::Teeth => teeth::create(s, data),
 		EntityKind::Bomb => bomb::create(s, data),
+		EntityKind::Bug => bug::create(s, data),
+		EntityKind::FireBall => fireball::create(s, data),
+		EntityKind::PinkBall => pinkball::create(s, data),
+		EntityKind::Tank => tank::create(s, data),
+		EntityKind::Glider => glider::create(s, data),
+		EntityKind::Teeth => teeth::create(s, data),
+		EntityKind::Walker => walker::create(s, data),
+		EntityKind::Blob => blob::create(s, data),
+		EntityKind::Paramecium => paramecium::create(s, data),
 	};
 	s.events.push(GameEvent::EntityCreated { entity: handle });
 	return handle;
@@ -85,7 +90,7 @@ pub fn press_green_button(s: &mut GameState, entity: EntityHandle) {
 			*ptr = Terrain::ToggleFloor;
 		}
 	}
-	s.events.push(GameEvent::GreenButton { entity });
+	s.events.push(GameEvent::GreenButton { entity, pressed: true });
 }
 
 pub fn press_red_button(s: &mut GameState, pos: Vec2i) {
@@ -125,6 +130,15 @@ pub fn press_blue_button(s: &mut GameState) {
 pub fn interact_terrain(s: &mut GameState, ent: &mut Entity) {
 	let terrain = s.field.get_terrain(ent.pos);
 
+	if matches!(terrain, Terrain::BearTrap) {
+		ent.trapped = !is_brown_button_pressed(s, ent.pos);
+	}
+
+	if !ent.has_moved {
+		return;
+	}
+	ent.has_moved = false;
+
 	match terrain {
 		Terrain::GreenButton => {
 			for ptr in s.field.terrain.iter_mut() {
@@ -136,7 +150,7 @@ pub fn interact_terrain(s: &mut GameState, ent: &mut Entity) {
 					*ptr = Terrain::ToggleFloor;
 				}
 			}
-			s.events.push(GameEvent::GreenButton { entity: ent.handle });
+			s.events.push(GameEvent::GreenButton { entity: ent.handle, pressed: true });
 		}
 		Terrain::RedButton => {
 			// Find the template entity connected to the red button
@@ -150,10 +164,12 @@ pub fn interact_terrain(s: &mut GameState, ent: &mut Entity) {
 			};
 			let h = create(s, &args);
 			// Force the new entity to move
-			if let Some(ent) = s.ents.get_mut(h) {
-				ent.step_dir = args.face_dir;
+			if let Some(mut ent) = s.ents.remove(h) {
+				// ent.step_dir = args.face_dir;
+				creature::try_move(s, &mut ent, args.face_dir.unwrap());
+				s.ents.insert(ent);
 			}
-			s.events.push(GameEvent::RedButton { entity: ent.handle });
+			s.events.push(GameEvent::RedButton { entity: ent.handle, pressed: true });
 		}
 		Terrain::BlueButton => {
 			for other in s.ents.map.values_mut() {

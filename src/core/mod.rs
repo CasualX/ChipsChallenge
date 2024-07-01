@@ -14,6 +14,7 @@ mod gamestate;
 mod inbuf;
 mod playerstate;
 mod terrain;
+mod quadtree;
 
 pub use self::connection::*;
 pub use self::dir::*;
@@ -26,6 +27,7 @@ pub use self::gamestate::*;
 pub use self::inbuf::*;
 pub use self::playerstate::*;
 pub use self::terrain::*;
+pub use self::quadtree::*;
 
 #[derive(Copy, Clone, Default)]
 pub struct Input {

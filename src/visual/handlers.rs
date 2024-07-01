@@ -51,7 +51,8 @@ pub fn entity_removed(ctx: &mut VisualState, handle: core::EntityHandle) {
 		obj.unalive_after_anim = true;
 	}
 	else {
-		ctx.objects.remove(obj_handle);
+		// ctx.objects.remove(obj_handle);
+		obj.unalive_after_anim = true;
 	}
 }
 
@@ -162,6 +163,7 @@ fn model_for_ent(ent: &core::Entity) -> Model {
 		core::EntityKind::Block => Model::Wall,
 		core::EntityKind::Tank => Model::ReallyFlatSprite,
 		core::EntityKind::Bug => Model::FlatSprite,
+		core::EntityKind::Blob => Model::ReallyFlatSprite,
 		_ => Model::Sprite,
 	}
 }
@@ -236,6 +238,12 @@ fn sprite_for_ent(ent: &core::Entity, pl: &core::PlayerState) -> Sprite {
 			Some(core::Dir::Right) => Sprite::TeethRight,
 			_ => Sprite::TeethUp,
 		},
+		core::EntityKind::Blob => Sprite::Blob,
+		core::EntityKind::Paramecium => match ent.face_dir {
+			Some(core::Dir::Up) | Some(core::Dir::Down) => Sprite::ParameciumUpDown,
+			Some(core::Dir::Left) | Some(core::Dir::Right) => Sprite::ParameciumLeftRight,
+			_ => Sprite::ParameciumUpDown,
+		}
 		core::EntityKind::Bomb => Sprite::Bomb,
 	}
 }

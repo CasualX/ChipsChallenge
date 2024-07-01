@@ -19,14 +19,16 @@ pub enum EntityKind {
 	GreenKey,
 	YellowKey,
 	Thief,
-	Bug,
-	Tank,
-	PinkBall,
-	FireBall,
-	Glider,
-	Walker,
-	Teeth,
 	Bomb,
+	Bug,
+	FireBall,
+	PinkBall,
+	Tank,
+	Glider,
+	Teeth,
+	Walker,
+	Blob,
+	Paramecium,
 }
 
 #[derive(Debug)]
@@ -41,6 +43,7 @@ pub struct Entity {
 	pub handle: EntityHandle,
 	pub kind: EntityKind,
 	pub pos: Vec2i,
+	pub speed: Time,
 	pub face_dir: Option<Dir>,
 	pub step_dir: Option<Dir>,
 	pub step_spd: Time,
@@ -49,6 +52,8 @@ pub struct Entity {
 	pub trapped: bool,
 	/// Entity is hidden under a block.
 	pub hidden: bool,
+	/// Entity has moved since the last tick.
+	pub has_moved: bool,
 	/// Entity will be removed at the end of the current tick.
 	pub remove: bool,
 }

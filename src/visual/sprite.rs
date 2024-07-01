@@ -95,6 +95,9 @@ pub enum Sprite {
 	TeethLeft,
 	TeethDown,
 	TeethRight,
+	Blob,
+	ParameciumUpDown,
+	ParameciumLeftRight,
 }
 
 impl Sprite {
@@ -191,6 +194,9 @@ impl Sprite {
 			Sprite::TeethRight => Vec2(5, 7),
 			Sprite::WalkerUpDown => Vec2(5, 8),
 			Sprite::WalkerLeftRight => Vec2(5, 9),
+			Sprite::Blob => Vec2(5, 12),
+			Sprite::ParameciumUpDown => Vec2(6, 0),
+			Sprite::ParameciumLeftRight => Vec2(6, 1),
 		}
 	}
 }

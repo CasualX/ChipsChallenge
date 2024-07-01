@@ -11,12 +11,14 @@ pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 		handle,
 		kind: args.kind,
 		pos: args.pos,
+		speed: BASE_SPD,
 		face_dir: args.face_dir,
 		step_dir: None,
 		step_spd: BASE_SPD,
 		step_time: 0,
 		trapped: false,
 		hidden: false,
+		has_moved: false,
 		remove: false,
 	});
 	return handle;
@@ -77,7 +79,7 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 			return;
 		}
 
-		if s.ps.dev_ghost {
+		if s.ps.dev_wtw {
 			if let Some(input_dir) = input_dir {
 				try_move(s, ent, input_dir);
 				return;
@@ -207,6 +209,7 @@ fn teleport(s: &mut GameState, ent: &mut Entity, dir: Dir) {
 			gravel: true,
 			fire: true,
 			dirt: true,
+			exit: false,
 		};
 		pos = dest;
 		if s.field.can_move(dest, dir, &flags) {
@@ -264,8 +267,9 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 		gravel: true,
 		fire: true,
 		dirt: true,
+		exit: true,
 	};
-	let mut success = s.ps.dev_ghost || s.field.can_move(ent.pos, move_dir, &flags);
+	let mut success = s.ps.dev_wtw || s.field.can_move(ent.pos, move_dir, &flags);
 	if success {
 		for handle in s.ents.map.keys().cloned().collect::<Vec<_>>() {
 			let Some(mut ent) = s.ents.remove(handle) else { continue };
@@ -300,6 +304,7 @@ fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
 
 		ent.step_dir = Some(move_dir);
 		ent.pos = new_pos;
+		ent.has_moved = true;
 		interact_terrain(s, ent);
 
 		// Set the player's move speed
@@ -379,6 +384,7 @@ fn is_solid_or_dirt(pos: Vec2i, move_dir: Dir, field: &Field, entities: &EntityM
 		gravel: false,
 		fire: true,
 		dirt: false,
+		exit: false,
 	};
 	if !field.can_move(pos, move_dir, &flags) {
 		return true;

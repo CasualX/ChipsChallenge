@@ -7,16 +7,20 @@ pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 		handle,
 		kind: args.kind,
 		pos: args.pos,
+		speed: BASE_SPD,
 		face_dir: args.face_dir,
 		step_dir: None,
 		step_spd: BASE_SPD,
 		step_time: 0,
 		trapped: false,
 		hidden: false,
+		has_moved: false,
 		remove: false,
 	});
 	return handle;
 }
+
+use creature::try_move;
 
 fn think(s: &mut GameState, ent: &mut Entity) {
 	if s.ents.get(s.ps.entity).map(|e| e.pos) == Some(ent.pos) {
@@ -24,8 +28,6 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 	}
 
 	if ent.step_dir.is_some() && s.time >= ent.step_time + ent.step_spd {
-		let terrain = s.field.get_terrain(ent.pos);
-
 		ent.step_dir = None;
 	}
 
@@ -39,37 +41,6 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 			else { }
 		}
 	}
-}
-
-fn try_move(s: &mut GameState, ent: &mut Entity, move_dir: Dir) -> bool {
-	let flags = CanMoveFlags {
-		gravel: false,
-		fire: true,
-		dirt: false,
-	};
-	if !s.field.can_move(ent.pos, move_dir, &flags) {
-		return false;
-	}
-
-	let new_pos = ent.pos + move_dir.to_vec();
-	for ent in s.ents.map.values() {
-		if ent.pos != new_pos {
-			continue;
-		}
-		match ent.kind {
-			EntityKind::Socket => return false,
-			EntityKind::Block => return false,
-			_ => (),
-		}
-	}
-
-	// s.events.push(GameEvent::EntityFaceDir { handle: ent.handle });
-	s.events.push(GameEvent::EntityStep { entity: ent.handle });
-	ent.face_dir = Some(move_dir);
-	ent.step_dir = Some(move_dir);
-	ent.step_time = s.time;
-	ent.pos = new_pos;
-	return true;
 }
 
 static FUNCS: EntityFuncs = EntityFuncs { think };

@@ -53,7 +53,7 @@ impl VisualState {
 				&core::GameEvent::BlueWallCleared { pos } => blue_wall_cleared(self, pos),
 				&core::GameEvent::HiddenWallBumped { pos } => hidden_wall_bumped(self, pos),
 				&core::GameEvent::RecessedWallRaised { pos } => recessed_wall_raised(self, pos),
-				&core::GameEvent::GreenButton { entity: _ } => toggle_walls(self),
+				&core::GameEvent::GreenButton { .. } => toggle_walls(self),
 				_ => {}
 			}
 		}

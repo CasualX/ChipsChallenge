@@ -27,16 +27,6 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 		ps_action(s, PlayerAction::Death);
 	}
 
-	let terrain = s.field.get_terrain(ent.pos);
-	if matches!(terrain, Terrain::CloneMachine) && ent.step_dir.is_none() {
-		return;
-	}
-	if matches!(terrain, Terrain::Water) {
-		s.events.push(GameEvent::EntityDrown { entity: ent.handle });
-		ent.remove = true;
-		return;
-	}
-
 	if ent.step_dir.is_some() && s.time >= ent.step_time + ent.step_spd {
 		ent.step_dir = None;
 	}
@@ -46,10 +36,15 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 	}
 	if s.time >= ent.step_time + ent.step_spd {
 		if let Some(face_dir) = ent.face_dir {
-			if try_move(s, ent, face_dir) { }
-			else if try_move(s, ent, face_dir.turn_right()) { }
+			// If paramecium can turn right, turn right
+			if try_move(s, ent, face_dir.turn_right()) { }
+			// Otherwise try to move forward
+			else if try_move(s, ent, face_dir) { }
+			// If forward is blocked, try to turn left
 			else if try_move(s, ent, face_dir.turn_left()) { }
+			// At this point, can't turn right, can't go forward, can't turn left so try to turn around
 			else if try_move(s, ent, face_dir.turn_around()) { }
+			// Trapped! Wait until freed
 			else { }
 		}
 	}

@@ -7,12 +7,14 @@ pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 		handle,
 		kind: args.kind,
 		pos: args.pos,
+		speed: BASE_SPD,
 		face_dir: args.face_dir,
 		step_dir: None,
-		step_spd: 0,
+		step_spd: BASE_SPD,
 		step_time: 0,
 		trapped: false,
 		hidden: false,
+		has_moved: false,
 		remove: false,
 	});
 	return handle;

@@ -57,54 +57,69 @@ impl Object {
 				if t > 0.75 {
 					self.pos = dest;
 				}
+				if t >= 0.75 && self.unalive_after_anim {
+					self.live = false;
+					println!("Object {:?} reached destination", self.handle);
+				}
+				return;
 			},
 			MoveType::Vel(vel) => {
 				self.pos += vel.vel * ctx.dt;
 			},
 		}
 
-		if matches!(self.anim, Animation::Rise | Animation::FadeOut) {
-			if self.atime == 0.0 {
-				self.atime = ctx.time;
+		match self.anim {
+			Animation::Rise | Animation::FadeOut => {
+				if self.atime == 0.0 {
+					self.atime = ctx.time;
+				}
+				self.alpha = f32::max(0.0, 1.0 - (ctx.time - self.atime) * 5.0);
+				if self.alpha == 0.0 {
+					self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
+					if self.unalive_after_anim {
+						self.live = false;
+					}
+				}
 			}
-			self.alpha = f32::max(0.0, 1.0 - (ctx.time - self.atime) * 5.0);
-			if self.alpha == 0.0 {
-				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
+			Animation::FadeIn => {
+				if self.atime == 0.0 {
+					self.atime = ctx.time;
+				}
+				self.alpha = f32::min(1.0, (ctx.time - self.atime) * 10.0);
+				if self.alpha == 1.0 {
+					self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
+				}
+			}
+			Animation::Fall => {
+				if self.atime == 0.0 {
+					self.atime = ctx.time;
+				}
+				if self.pos.z <= -20.0 {
+					self.pos.z = -21.0;
+					self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
+					if self.unalive_after_anim {
+						self.live = false;
+					}
+				}
+			}
+			Animation::Raise => {
+				if self.atime == 0.0 {
+					self.atime = ctx.time;
+					self.mover = MoveType::Vel(MoveVel { vel: Vec3(0.0, 0.0, 200.0) });
+					self.pos.z = -20.0;
+				}
+				if self.pos.z >= 0.0 {
+					self.pos.z = 0.0;
+					self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
+					if self.unalive_after_anim {
+						self.live = false;
+					}
+				}
+			}
+			Animation::None => {
 				if self.unalive_after_anim {
 					self.live = false;
 				}
-			}
-		}
-		if matches!(self.anim, Animation::FadeIn) {
-			if self.atime == 0.0 {
-				self.atime = ctx.time;
-			}
-			self.alpha = f32::min(1.0, (ctx.time - self.atime) * 10.0);
-			if self.alpha == 1.0 {
-				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
-			}
-		}
-		if matches!(self.anim, Animation::Fall) {
-			if self.atime == 0.0 {
-				self.atime = ctx.time;
-			}
-			if self.pos.z <= -20.0 {
-				self.pos.z = -21.0;
-				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
-				if self.unalive_after_anim {
-					self.live = false;
-				}
-			}
-		}
-		if matches!(self.anim, Animation::Raise) {
-			if self.atime == 0.0 {
-				self.atime = ctx.time;
-				self.mover = MoveType::Vel(MoveVel { vel: Vec3(0.0, 0.0, 200.0) });
-				self.pos.z = -20.0;
-			}
-			if self.pos.z >= 0.0 {
-				self.pos.z = 0.0;
-				self.mover = MoveType::Vel(MoveVel { vel: Vec3::ZERO });
 			}
 		}
 	}

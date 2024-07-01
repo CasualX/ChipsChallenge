@@ -38,12 +38,12 @@ pub struct PlayerState {
 	pub ice_skates: bool,
 	pub suction_boots: bool,
 
-	pub dev_ghost: bool,
+	pub dev_wtw: bool,
 }
 
 pub fn ps_update_moves(s: &mut GameState, input: &Input) {
 	if !(s.input.a && s.input.b) && input.a && input.b {
-		s.ps.dev_ghost = !s.ps.dev_ghost;
+		s.ps.dev_wtw = !s.ps.dev_wtw;
 	}
 	s.ps.inbuf.handle(Dir::Left,  input.left,  s.input.left);
 	s.ps.inbuf.handle(Dir::Right, input.right, s.input.right);

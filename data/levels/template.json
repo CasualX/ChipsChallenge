@@ -2,6 +2,7 @@
 	"name": "",
 	"hint": "",
 	"password": "",
+	"seed": 0,
 	"time": 0,
 	"chips": 0,
 	"map": {

@@ -7,10 +7,10 @@ pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 		handle,
 		kind: args.kind,
 		pos: args.pos,
-		speed: BASE_SPD,
+		speed: BASE_SPD * 2,
 		face_dir: args.face_dir,
 		step_dir: None,
-		step_spd: BASE_SPD,
+		step_spd: BASE_SPD * 2,
 		step_time: 0,
 		trapped: false,
 		hidden: false,
@@ -27,16 +27,6 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 		ps_action(s, PlayerAction::Death);
 	}
 
-	let terrain = s.field.get_terrain(ent.pos);
-	if matches!(terrain, Terrain::CloneMachine) && ent.step_dir.is_none() {
-		return;
-	}
-	if matches!(terrain, Terrain::Water) {
-		s.events.push(GameEvent::EntityDrown { entity: ent.handle });
-		ent.remove = true;
-		return;
-	}
-
 	if ent.step_dir.is_some() && s.time >= ent.step_time + ent.step_spd {
 		ent.step_dir = None;
 	}
@@ -45,12 +35,9 @@ fn think(s: &mut GameState, ent: &mut Entity) {
 		return;
 	}
 	if s.time >= ent.step_time + ent.step_spd {
-		if let Some(face_dir) = ent.face_dir {
-			if try_move(s, ent, face_dir) { }
-			else if try_move(s, ent, face_dir.turn_right()) { }
-			else if try_move(s, ent, face_dir.turn_left()) { }
-			else if try_move(s, ent, face_dir.turn_around()) { }
-			else { }
+		if let Some(&move_dir) = s.rand.rng.choose(&[Dir::Up, Dir::Down, Dir::Left, Dir::Right]) {
+			// The direction of the blob means nothing, it is completely random
+			try_move(s, ent, move_dir);
 		}
 	}
 }
